@@ -2,7 +2,6 @@ package ua.kpi.absolutesvinema.model;
 
 import java.time.LocalDateTime;
 
-/** An immutable value; a null ID represents a new, unsaved entity. */
 public record Ticket(Long id, Long seatId, String customerName, LocalDateTime bookedAt) {
     public Ticket {
         if (id != null && id <= 0) {

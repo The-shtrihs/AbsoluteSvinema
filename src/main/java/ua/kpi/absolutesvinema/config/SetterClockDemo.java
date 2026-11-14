@@ -6,7 +6,6 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 import java.time.Instant;
 
-/** Educational example; application services use constructor injection. */
 @Component
 public class SetterClockDemo {
     private Clock clock;

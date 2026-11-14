@@ -35,7 +35,7 @@ public class TicketService {
         if (ticketRepository.findBySeatId(seatId).isPresent()) {
             throw new IllegalStateException("Seat already has a ticket: " + seatId);
         }
-        // The repository also checks availability atomically with saving.
+
         return ticketRepository.save(ticket);
     }
 

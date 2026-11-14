@@ -25,7 +25,7 @@ class DependencyInjectionTest {
         var tickets = context.getBean(TicketService.class);
         assertThat(context.getBean(ScreeningService.class)).isSameAs(screenings);
         assertThat(context.getBean(TicketService.class)).isSameAs(tickets);
-        // Calls use the constructor-injected repositories.
+
         assertThat(screenings.findAll()).isNotEmpty();
         assertThat(tickets.findAll()).isNotNull();
     }

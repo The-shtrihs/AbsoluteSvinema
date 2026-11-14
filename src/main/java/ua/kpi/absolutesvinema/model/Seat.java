@@ -1,6 +1,5 @@
 package ua.kpi.absolutesvinema.model;
 
-/** An immutable value; a null ID represents a new, unsaved entity. */
 public record Seat(Long id, Long screeningId, int rowNumber, int seatNumber) {
     public Seat {
         if (id != null && id <= 0) {
