@@ -8,17 +8,20 @@ import ua.kpi.absolutesvinema.repository.ScreeningRepository;
 import ua.kpi.absolutesvinema.repository.SeatRepository;
 import ua.kpi.absolutesvinema.repository.TicketRepository;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class TicketService {
+    private final Clock clock;
     private final TicketRepository ticketRepository;
     private final SeatRepository seatRepository;
     private final ScreeningRepository screeningRepository;
 
     public TicketService(TicketRepository ticketRepository, SeatRepository seatRepository,
-                         ScreeningRepository screeningRepository) {
+                         ScreeningRepository screeningRepository, Clock clock) {
+        this.clock = clock;
         this.ticketRepository = ticketRepository;
         this.seatRepository = seatRepository;
         this.screeningRepository = screeningRepository;
@@ -28,7 +31,7 @@ public class TicketService {
         Seat seat = findSeat(seatId);
         screeningRepository.findById(seat.screeningId())
                 .orElseThrow(() -> new ResourceNotFoundException("Screening", seat.screeningId()));
-        Ticket ticket = new Ticket(null, seatId, customerName, LocalDateTime.now());
+        Ticket ticket = new Ticket(null, seatId, customerName, LocalDateTime.now(clock));
         if (ticketRepository.findBySeatId(seatId).isPresent()) {
             throw new IllegalStateException("Seat already has a ticket: " + seatId);
         }

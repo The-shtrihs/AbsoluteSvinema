@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="uk" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>AbsoluteSvinema — сеанси</title></head>
+<body>
+<h1>Сеанси</h1>
+<p th:if="${screenings.isEmpty()}">Сеансів поки немає.</p>
+<ul>
+    <li th:each="screening : ${screenings}">
+        <a th:href="@{/screenings/{id}(id=${screening.id})}" th:text="${screening.movieTitle}"></a>
+        <span th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></span>,
+        <span th:text="${screening.hall}"></span>,
+        <span th:text="${screening.ticketPrice}"></span> грн,
+        <span th:text="${screening.movieDurationMinutes}"></span> хв
+    </li>
+</ul>
+</body>
+</html>
