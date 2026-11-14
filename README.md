@@ -1,4 +1,4 @@
-# Cinema Booking — система бронювання квитків у кінотеатрі
+# AbsoluteSvinema — система бронювання квитків у кінотеатрі
 
 > Навчальний Spring Boot застосунок для лабораторних робіт №2–6.
 > **Варіант №6 із методички ЛР №2.** Мета — невеликий, зрозумілий, робочий проєкт, який виконує вимоги лабораторних **без зайвих функцій**.
@@ -73,11 +73,13 @@ erDiagram
 
 ## 3. Технології та структура
 
+**Назва:** `AbsoluteSvinema` · **GitHub repo:** `AbsoluteSvinema` · **Maven artifactId:** `absolute-svinema` · **Java package:** `ua.kpi.absolutesvinema`.
+
 **База:** Java 21+ (рекомендовано однакова версія JDK у команді), Spring Boot, Maven, Spring Web, Thymeleaf, Jakarta Bean Validation, JUnit 5. Для №4 додати springdoc-openapi; для №5 — Spring JDBC та PostgreSQL; для №6 — Spring Data JPA. Lombok — необов'язковий: домовитися про стиль один раз і не витрачати час на переписування.
 
 ```text
-src/main/java/ua/kpi/cinema/
-├── CinemaApplication.java
+src/main/java/ua/kpi/absolutesvinema/
+├── AbsoluteSvinemaApplication.java
 ├── model/                 Screening, Seat, Ticket
 ├── repository/            ScreeningRepository, SeatRepository, TicketRepository
 │   └── memory/            InMemory...Repository (ЛР 2–4)
@@ -91,7 +93,7 @@ src/main/resources/
 ├── templates/             HTML + Thymeleaf
 └── application.properties
 
-src/test/java/ua/kpi/cinema/
+src/test/java/ua/kpi/absolutesvinema/
 docs/
 ├── lab-2/                 скриншоти, короткі пояснення
 ├── lab-3/
@@ -227,7 +229,7 @@ docs/
 
 ## 11. Як почати роботу
 
-1. Створити **новий невеликий репозиторій** `cinema-booking`, а не переносити весь старий великий BlindPig.
+1. Створити **новий невеликий репозиторій** `AbsoluteSvinema`, а не переносити весь старий великий BlindPig.
 2. У Spring Initializr вибрати Maven, Java, Spring Web, Thymeleaf, Validation і Spring Boot Starter Test (або відповідні starter-и вашої версії).
 3. Додати цей README в корінь репозиторію.
 4. **Учасник №1** реалізує тільки розділ **«Лабораторна №2»**; інші поки не змінюють його файли.
