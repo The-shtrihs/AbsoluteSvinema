@@ -21,14 +21,20 @@ class InMemoryRepositoriesTest {
     @Test
     void screeningCrudAndGeneratedIds() {
         var repository = new InMemoryScreeningRepository();
-        var draft = new Screening(null, "Film", TIME, "Hall 1", BigDecimal.TEN);
+        var draft = new Screening(null, "Film", "A short film description", 120, TIME, "Hall 1", BigDecimal.TEN);
         var first = repository.save(draft);
         var second = repository.save(draft);
         assertThat(draft.id()).isNull();
         assertThat(first.id()).isPositive().isNotEqualTo(second.id());
         assertThat(repository.findById(first.id())).contains(first);
-        var updated = new Screening(first.id(), "Updated", TIME, "Hall 2", BigDecimal.ONE);
+        assertThat(first.movieDescription()).isEqualTo("A short film description");
+        assertThat(first.movieDurationMinutes()).isEqualTo(120);
+        var updated = new Screening(first.id(), "Updated", "An updated description", 95, TIME, "Hall 2", BigDecimal.ONE);
         assertThat(repository.save(updated)).isEqualTo(updated);
+        assertThat(repository.findById(first.id())).contains(updated);
+        assertThat(repository.findById(first.id()).orElseThrow().movieDescription())
+                .isEqualTo("An updated description");
+        assertThat(repository.findById(first.id()).orElseThrow().movieDurationMinutes()).isEqualTo(95);
         assertThat(repository.findAll()).containsExactly(updated, second);
         repository.deleteById(first.id());
         repository.deleteById(first.id());

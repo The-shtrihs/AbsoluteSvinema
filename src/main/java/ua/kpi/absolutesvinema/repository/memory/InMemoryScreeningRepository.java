@@ -22,7 +22,8 @@ public class InMemoryScreeningRepository implements ScreeningRepository {
             throw new IllegalArgumentException("Unknown screening ID: " + entity.id());
         }
         Long id = entity.id() == null ? nextId++ : entity.id();
-        Screening saved = new Screening(id, entity.movieTitle(), entity.startsAt(), entity.hall(), entity.ticketPrice());
+        Screening saved = new Screening(id, entity.movieTitle(), entity.movieDescription(),
+                entity.movieDurationMinutes(), entity.startsAt(), entity.hall(), entity.ticketPrice());
         screenings.put(id, saved);
         return saved;
     }

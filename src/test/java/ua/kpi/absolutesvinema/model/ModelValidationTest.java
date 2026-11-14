@@ -21,20 +21,25 @@ class ModelValidationTest {
 
     static Stream<Runnable> invalidModels() {
         return Stream.of(
-                () -> new Screening(0L, "Film", TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", null, 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "", 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "  ", 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "Description", 0, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "Description", -1, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(0L, "Film", "A short film description", 120, TIME, "Hall", BigDecimal.TEN),
                 () -> new Seat(0L, 1L, 1, 1),
                 () -> new Ticket(0L, 1L, "Guest", TIME),
-                () -> new Screening(-1L, "Film", TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(-1L, "Film", "A short film description", 120, TIME, "Hall", BigDecimal.TEN),
                 () -> new Seat(-1L, 1L, 1, 1),
                 () -> new Ticket(-1L, 1L, "Guest", TIME),
-                () -> new Screening(null, null, TIME, "Hall", BigDecimal.TEN),
-                () -> new Screening(null, "Film", TIME, null, BigDecimal.TEN),
+                () -> new Screening(null, null, "A short film description", 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "A short film description", 120, TIME, null, BigDecimal.TEN),
                 () -> new Ticket(null, 1L, null, TIME),
-                () -> new Screening(null, "", TIME, "Hall", BigDecimal.TEN),
-                () -> new Screening(null, "Film", TIME, "", BigDecimal.TEN),
+                () -> new Screening(null, "", "A short film description", 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "A short film description", 120, TIME, "", BigDecimal.TEN),
                 () -> new Ticket(null, 1L, "", TIME),
-                () -> new Screening(null, "  ", TIME, "Hall", BigDecimal.TEN),
-                () -> new Screening(null, "Film", TIME, "  ", BigDecimal.TEN),
+                () -> new Screening(null, "  ", "A short film description", 120, TIME, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "A short film description", 120, TIME, "  ", BigDecimal.TEN),
                 () -> new Ticket(null, 1L, "  ", TIME),
                 () -> new Seat(null, null, 1, 1),
                 () -> new Ticket(null, null, "Guest", TIME),
@@ -42,9 +47,9 @@ class ModelValidationTest {
                 () -> new Ticket(null, 0L, "Guest", TIME),
                 () -> new Seat(null, -1L, 1, 1),
                 () -> new Ticket(null, -1L, "Guest", TIME),
-                () -> new Screening(null, "Film", null, "Hall", BigDecimal.TEN),
-                () -> new Screening(null, "Film", TIME, "Hall", null),
-                () -> new Screening(null, "Film", TIME, "Hall", BigDecimal.valueOf(-1)),
+                () -> new Screening(null, "Film", "A short film description", 120, null, "Hall", BigDecimal.TEN),
+                () -> new Screening(null, "Film", "A short film description", 120, TIME, "Hall", null),
+                () -> new Screening(null, "Film", "A short film description", 120, TIME, "Hall", BigDecimal.valueOf(-1)),
                 () -> new Ticket(null, 1L, "Guest", null),
                 () -> new Seat(null, 1L, 0, 1),
                 () -> new Seat(null, 1L, -1, 1),
@@ -53,8 +58,15 @@ class ModelValidationTest {
     }
 
     @Test
+    void createsScreeningWithDescriptionAndDuration() {
+        var screening = new Screening(null, "Film", "A short description", 1, TIME, "Hall", BigDecimal.TEN);
+        assertThat(screening.movieDescription()).isEqualTo("A short description");
+        assertThat(screening.movieDurationMinutes()).isEqualTo(1);
+    }
+
+    @Test
     void acceptsUnsavedModelsAndZeroPrice() {
-        assertThat(new Screening(null, "Film", TIME, "Hall", BigDecimal.ZERO).id()).isNull();
+        assertThat(new Screening(null, "Film", "A short film description", 120, TIME, "Hall", BigDecimal.ZERO).id()).isNull();
         assertThat(new Seat(null, 1L, 1, 1).id()).isNull();
         assertThat(new Ticket(null, 1L, "Guest", TIME).id()).isNull();
     }
