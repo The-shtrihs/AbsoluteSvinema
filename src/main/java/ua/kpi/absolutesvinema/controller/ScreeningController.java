@@ -48,11 +48,11 @@ public class ScreeningController {
         }
         try {
             ticketService.book(seatId, customerName);
-            redirect.addFlashAttribute("message", "Місце успішно заброньовано.");
+            redirect.addFlashAttribute("message", "Seat booked successfully.");
         } catch (IllegalStateException occupied) {
-            redirect.addFlashAttribute("error", "Це місце вже зайняте. Оберіть інше.");
+            redirect.addFlashAttribute("error", "This seat is already booked. Please choose another.");
         } catch (IllegalArgumentException invalid) {
-            redirect.addFlashAttribute("error", "Вкажіть непорожнє ім’я покупця.");
+            redirect.addFlashAttribute("error", "Please enter a non-blank customer name.");
         }
         return "redirect:/screenings/" + id;
     }

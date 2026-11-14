@@ -57,7 +57,7 @@ class ScreeningMvcTest {
             assertThat(list.body()).contains("Test film", "Test hall", "175.00", "113", "10.01.2027 18:30");
             var detail = get(client, path);
             assertThat(detail.statusCode()).isEqualTo(200);
-            assertThat(detail.body()).contains("A full &lt;description&gt;", "113", "Вільне");
+            assertThat(detail.body()).contains("A full &lt;description&gt;", "113", "Available");
             assertThat(detail.body().split("name=\"seatId\"", -1)).hasSize(16);
 
             var booked = post(client, path, seatId, "Anna");
@@ -66,18 +66,18 @@ class ScreeningMvcTest {
                     .isEqualTo("http://localhost:" + port + path);
             assertThat(tickets.isSeatBooked(seatId)).isTrue();
             var confirmation = getWithCookies(client, path, booked);
-            assertThat(confirmation.body()).contains("Місце успішно заброньовано.", "Зайняте");
+            assertThat(confirmation.body()).contains("Seat booked successfully.", "Booked");
             assertThat(confirmation.body()).doesNotContain("name=\"seatId\" value=\"" + seatId + "\"");
 
             var duplicate = post(client, path, seatId, "Ivan");
             assertThat(duplicate.statusCode()).isEqualTo(302);
-            assertThat(getWithCookies(client, path, duplicate).body()).contains("Це місце вже зайняте");
+            assertThat(getWithCookies(client, path, duplicate).body()).contains("This seat is already booked");
             assertThat(tickets.findAll().stream().filter(ticket -> ticket.seatId().equals(seatId))).hasSize(1);
 
             var freeSeat = screenings.findSeats(screening.id()).get(1).id();
             var invalid = post(client, path, freeSeat, "  ");
             assertThat(invalid.statusCode()).isEqualTo(302);
-            assertThat(getWithCookies(client, path, invalid).body()).contains("Вкажіть непорожнє ім’я покупця");
+            assertThat(getWithCookies(client, path, invalid).body()).contains("Please enter a non-blank customer name");
             assertThat(tickets.isSeatBooked(freeSeat)).isFalse();
             assertThat(get(client, "/screenings/999999").statusCode()).isEqualTo(404);
             assertThat(post(client, path, 999999L, "Anna").statusCode()).isEqualTo(404);

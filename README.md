@@ -1,50 +1,50 @@
-# AbsoluteSvinema — система бронювання квитків у кінотеатрі
+# AbsoluteSvinema — cinema ticket booking system
 
-> Навчальний Spring Boot застосунок для лабораторних робіт №2–6.
-> **Варіант №6 із методички ЛР №2.** Мета — невеликий, зрозумілий, робочий проєкт, який виконує вимоги лабораторних **без зайвих функцій**.
+> An educational Spring Boot application for Labs 2–6.
+> **Variant 6 from the Lab 2 assignment.** The goal is a small, understandable, working project that meets the laboratory requirements **without unnecessary features**.
 
-## 1. Тема й межі проєкту
+## 1. Project topic and scope
 
-**Завдання варіанта №6:**
+**Variant 6 assignment:**
 
-- **Сутності за методичкою:** сеанс, місце.
-- **Актори:** гість, адміністратор.
-- **Гість:** переглядає сеанси, замовляє квитки.
-- **Адміністратор:** створює, редагує та видаляє інформацію про сеанси й квитки.
+- **Entities in the assignment:** screening, seat.
+- **Actors:** guest, administrator.
+- **Guest:** views screenings and books tickets.
+- **Administrator:** creates, edits, and deletes screening and ticket information.
 
-Для оформлення замовлення вводимо **квиток** як третю просту модель. Не створюємо окремих сутностей `Movie`, `User`, `Payment`, `CinemaHall`, `Order`, `Role` тощо: для цієї навчальної задачі вони не потрібні.
+We introduce a **ticket** as a third simple model to represent a booking. Do not create separate `Movie`, `User`, `Payment`, `CinemaHall`, `Order`, `Role`, or similar entities: they are unnecessary for this educational task.
 
-### MVP: що вміє застосунок
+### MVP capabilities
 
-1. Показує список сеансів (фільм, час, зал, ціна).
-2. Показує місця конкретного сеансу та їхню зайнятість.
-3. Дозволяє гостю забронювати вільне місце, вказавши ім'я.
-4. Не дозволяє забронювати одне місце двічі.
-5. Дозволяє адміністратору керувати сеансами та квитками через прості сторінки.
-6. Має REST API для сеансів із можливостями, потрібними ЛР №4.
-7. Поступово замінює сховище: **in-memory (№2–4) → JDBC (№5) → JPA (№6)**.
+1. Lists screenings (movie, time, hall, price).
+2. Shows the seats for a screening and their availability.
+3. Lets a guest book an available seat by providing a name.
+4. Prevents booking the same seat twice.
+5. Lets an administrator manage screenings and tickets through simple pages.
+6. Provides the screening REST API capabilities required by Lab 4.
+7. Replaces storage gradually: **in-memory (Labs 2–4) → JDBC (Lab 5) → JPA (Lab 6)**.
 
-**Не робимо:** реєстрацію, авторизацію, оплату, QR-коди, email/SMS, особисті кабінети, ролі в БД, інтерактивну карту залу на JavaScript, мікросервіси, Docker/Kubernetes як обов'язкову частину, складний frontend. Сторінки `/admin/**` — навчальні, **без захисту доступу**; у ЛР №3–4 це дозволено методичками. Не називати таке рішення готовим до production.
+**Out of scope:** registration, authentication, authorization, payments, QR codes, email/SMS, personal accounts, database roles, interactive JavaScript seat maps, microservices, mandatory Docker/Kubernetes, and a complex frontend. The `/admin/**` pages are educational and **have no access protection**; the Lab 3–4 assignments allow this. Do not describe this solution as production-ready.
 
-## 2. Моделі даних
+## 2. Data models
 
-| Модель | Основні поля | Призначення |
+| Model | Main fields | Purpose |
 |---|---|---|
-| `Screening` | `id`, `movieTitle`, `startsAt`, `hall`, `ticketPrice` | Сеанс конкретного фільму |
-| `Seat` | `id`, `screeningId`, `rowNumber`, `seatNumber` | Місце **в конкретному сеансі** |
-| `Ticket` | `id`, `seatId`, `customerName`, `bookedAt` | Бронювання одного місця |
+| `Screening` | `id`, `movieTitle`, `movieDescription`, `movieDurationMinutes`, `startsAt`, `hall`, `ticketPrice` | A screening of a particular movie |
+| `Seat` | `id`, `screeningId`, `rowNumber`, `seatNumber` | A seat **in a particular screening** |
+| `Ticket` | `id`, `seatId`, `customerName`, `bookedAt` | A booking for one seat |
 
-**Домовленості:**
+**Conventions:**
 
-- При створенні сеансу автоматично створюємо місця за **фіксованою схемою 3 ряди × 5 місць = 15 місць**. Конструктор або сервіс створює їх один раз; окремий редактор залів не потрібен.
-- Місце вільне, якщо для його `seatId` **немає** квитка. Не зберігати паралельно `Seat.booked`: це зайве дублювання стану.
-- **Один квиток на одне місце.** Перевіряємо в сервісі, а після переходу на БД додатково забезпечуємо `UNIQUE(ticket.seat_id)`.
-- Бронювання перевіряє існування місця й сеансу. За потреби можна заборонити бронювання сеансів у минулому.
-- Ціна — `BigDecimal`, дата й час — `LocalDateTime`. Для MVC та REST вхідні дані перевіряємо через Jakarta Validation.
-- Редагування квитка адміністратором для MVP означає зміну `customerName`; скасування бронювання — видалення квитка. Перенесення квитків між місцями не реалізуємо.
-- Видалення сеансу повинно також коректно прибирати пов'язані місця та квитки (у Fake — явно; у JDBC/JPA — через визначені відношення/каскади або транзакцію).
+- Creating a screening automatically creates seats using a **fixed layout of 3 rows × 5 seats = 15 seats**. The constructor or service creates them once; no separate hall editor is needed.
+- A seat is available when there is **no** ticket for its `seatId`. Do not store a separate `Seat.booked` flag: it duplicates state.
+- **One ticket per seat.** Check in the service and, after migrating to a database, also enforce `UNIQUE(ticket.seat_id)`.
+- Booking checks that the seat and screening exist. Rejecting bookings for past screenings can be added if needed.
+- Price uses `BigDecimal`; date and time use `LocalDateTime`. Validate MVC and REST input with Jakarta Validation.
+- For the MVP, editing a ticket means changing `customerName`; cancelling a booking means deleting the ticket. Do not implement moving tickets between seats.
+- Deleting a screening must also remove its seats and tickets correctly (explicitly in Fake storage; through defined relationships/cascades or transactions in JDBC/JPA).
 
-### Простий зв'язок сутностей
+### Entity relationships
 
 ```mermaid
 erDiagram
@@ -53,6 +53,8 @@ erDiagram
     SCREENING {
         long id PK
         string movieTitle
+        string movieDescription
+        int movieDurationMinutes
         datetime startsAt
         string hall
         decimal ticketPrice
@@ -71,23 +73,23 @@ erDiagram
     }
 ```
 
-## 3. Технології та структура
+## 3. Technology and structure
 
-**Назва:** `AbsoluteSvinema` · **GitHub repo:** `AbsoluteSvinema` · **Maven artifactId:** `absolute-svinema` · **Java package:** `ua.kpi.absolutesvinema`.
+**Name:** `AbsoluteSvinema` · **GitHub repo:** `AbsoluteSvinema` · **Maven artifactId:** `absolute-svinema` · **Java package:** `ua.kpi.absolutesvinema`.
 
-**База:** Java 21+ (рекомендовано однакова версія JDK у команді), Spring Boot, Maven, Spring Web, Thymeleaf, Jakarta Bean Validation, JUnit 5. Для №4 додати springdoc-openapi; для №5 — Spring JDBC та PostgreSQL; для №6 — Spring Data JPA. Lombok — необов'язковий: домовитися про стиль один раз і не витрачати час на переписування.
+**Foundation:** Java 21+ (the team should use the same JDK version), Spring Boot, Maven, Spring Web, Thymeleaf, Jakarta Bean Validation, JUnit 5. Add springdoc-openapi for Lab 4; Spring JDBC and PostgreSQL for Lab 5; Spring Data JPA for Lab 6. Lombok is optional: agree on a style once and avoid spending time rewriting it.
 
 ```text
 src/main/java/ua/kpi/absolutesvinema/
 ├── AbsoluteSvinemaApplication.java
 ├── model/                 Screening, Seat, Ticket
 ├── repository/            ScreeningRepository, SeatRepository, TicketRepository
-│   └── memory/            InMemory...Repository (ЛР 2–4)
+│   └── memory/            InMemory...Repository (Labs 2–4)
 ├── service/               ScreeningService, TicketService
-├── controller/            MVC-контролери (ЛР 2–3)
-├── api/                   REST-контролер, request/response DTO (ЛР 4)
-├── config/                Spring-конфігурація + демонстрація DI/scopes
-└── exception/             Зрозумілі помилки + HTTP-обробник
+├── controller/            MVC controllers (Labs 2–3)
+├── api/                   REST controller, request/response DTOs (Lab 4)
+├── config/                Spring configuration + DI/scope examples
+└── exception/             Clear errors + HTTP handler
 
 src/main/resources/
 ├── templates/             HTML + Thymeleaf
@@ -95,151 +97,151 @@ src/main/resources/
 
 src/test/java/ua/kpi/absolutesvinema/
 docs/
-├── lab-2/                 скриншоти, короткі пояснення
+├── lab-2/                 Screenshots and brief explanations
 ├── lab-3/
 ├── lab-4/
 ├── lab-5/
 └── lab-6/
 ```
 
-**Архітектура:** `MVC / REST Controller → Service → Repository interface → реалізація`. Контролери **не працюють з репозиторіями напряму**; одна бізнес-логіка використовується HTML і REST. Без зайвих factory/strategy/mapper-шарів, якщо це не потрібно.
+**Architecture:** `MVC / REST Controller → Service → Repository interface → implementation`. Controllers **must not access repositories directly**; HTML and REST share the same business logic. Avoid factory/strategy/mapper layers unless needed.
 
-## 4. Розподіл між 5 учасниками
+## 4. Responsibilities for five participants
 
-**Один учасник — одна лабораторна.** ЛР №2–6 = п'ять послідовних етапів одного проєкту. Імена впишіть у таблицю, коли домовитеся.
+**One participant per lab.** Labs 2–6 are five consecutive stages of one project. Fill in the names after agreeing on ownership.
 
-| Учасник | Відповідальність | Що передає наступному |
+| Participant | Responsibility | Handoff to the next participant |
 |---|---|---|
-| 1 — ______ | **ЛР №2**: каркас, моделі, Fake Repository, сервіси, мінімальний MVC, DI | Робочий застосунок і стабільні моделі/сервісні методи |
-| 2 — ______ | **ЛР №3**: Thymeleaf-сторінки, форми, XSS, MVC-сценарії | Готовий HTML-інтерфейс поверх існуючих сервісів |
-| 3 — ______ | **ЛР №4**: REST, CRUD, фільтрація, пагінація, 2 PATCH, OpenAPI, Postman | Робочий API + приклади запитів |
-| 4 — ______ | **ЛР №5**: PostgreSQL, JDBC, транзакції | JDBC-сховище замість Fake без зміни поведінки сервісів |
-| 5 — ______ | **ЛР №6**: Spring Data JPA, зв'язки, запити, перевірки | JPA-сховище замість JDBC без зміни зовнішнього API |
+| 1 — ______ | **Lab 2:** skeleton, models, Fake Repository, services, minimal MVC, DI | Working application and stable model/service methods |
+| 2 — ______ | **Lab 3:** Thymeleaf pages, forms, XSS, MVC scenarios | Complete HTML interface over existing services |
+| 3 — ______ | **Lab 4:** REST, CRUD, filtering, pagination, two PATCH formats, OpenAPI, Postman | Working API and example requests |
+| 4 — ______ | **Lab 5:** PostgreSQL, JDBC, transactions | JDBC storage replacing Fake storage without changing service behavior |
+| 5 — ______ | **Lab 6:** Spring Data JPA, relationships, queries, checks | JPA storage replacing JDBC without changing the external API |
 
-> **Важливо:** етапи залежать один від одного, тому це **не п'ять незалежних паралельних проєктів**. Поки наступний учасник чекає на попередній код, він може читати методичку, готувати Postman-сценарії чи звіт, але не створювати несумісний каркас. Кожен захищає лабораторну **індивідуально**, отже всі мають хоча б орієнтуватися в загальному коді.
+> **Important:** stages depend on each other; these are **not five independent parallel projects**. While waiting, the next participant can read the assignment, prepare Postman scenarios or the report, but should not create an incompatible skeleton. Each participant defends the lab **individually**, so everyone should understand the code at least at a basic level.
 
-### Мінімальна передача етапу (без зайвих зустрічей)
+### Minimal handoff checklist
 
-Перед передачею наступному учаснику власник лабораторної:
+Before handing a stage to the next participant, its owner:
 
-1. Запускає `./mvnw test` і `./mvnw spring-boot:run` (або `mvn`, якщо wrapper не створено).
-2. Перевіряє один позитивний і один помилковий сценарій.
-3. Робить PR/merge в `main` після короткого review, ставить тег `lab-2`, `lab-3` тощо.
-4. У PR пише **3–5 речень**: що зроблено, як запустити, що перевірено, які є відомі обмеження.
-5. Кладе скриншоти і матеріали для **одного звіту на лабораторну** в `docs/lab-N/`. У звіті: титул із ПІБ і групами всіх учасників, хід роботи (скриншоти + пояснення), відповіді на контрольні питання. Хто надсилає звіт — узгодити з викладачем.
+1. Runs `./mvnw test` and `./mvnw spring-boot:run` (or `mvn` if the wrapper is unavailable).
+2. Checks one successful and one failing scenario.
+3. Opens a PR/merges into `main` after a brief review and adds a `lab-2`, `lab-3`, etc. tag.
+4. Writes **3–5 sentences** in the PR: what changed, how to run it, what was checked, and known limitations.
+5. Puts screenshots and materials for **one report per lab** in `docs/lab-N/`. The report includes a title page with all participants' names and groups, steps with screenshots and explanations, and answers to review questions. Agree with the instructor on who submits it.
 
-Жоден агент або Codex **не робить git commit/push без дозволу людини**.
+No agent or Codex may **commit or push without a person's permission**.
 
-## 5. Лабораторна №2 — Створення та зв'язування компонентів
+## 5. Lab 2 — creating and connecting components
 
-**Основа проєкту.** Точні вимоги взято з `Spring-lab-02(1).docx`.
+**The project foundation.** Exact requirements are taken from `Spring-lab-02(1).docx`.
 
-### Реалізувати
+### Implement
 
-- [ ] Створити Spring Boot проєкт зі **Spring Web + Thymeleaf**; додати Validation і Test для зручності.
-- [ ] Створити `Screening`, `Seat`, `Ticket` і repository-інтерфейси.
-- [ ] Створити **Fake Repository** на `Map` із генерацією ID; дані поки тільки в пам'яті.
-- [ ] Зробити `ScreeningService`: отримання списку/деталей, створення, редагування, видалення сеансів; автоматичне створення 15 місць.
-- [ ] Зробити `TicketService`: бронювання вільного місця, отримання/редагування/скасування квитка; заборона повторної броні.
-- [ ] Мінімальні `@Controller` + Thymeleaf: список сеансів і проста форма бронювання (повні сторінки — в №3).
-- [ ] Продемонструвати `@Component`, `@Repository`, `@Service`, `@Controller`.
-- [ ] Продемонструвати **`@Bean` у `@Configuration`** (наприклад, bean `Clock`).
-- [ ] Продемонструвати **singleton і prototype**: стандартний singleton service та невеликий prototype-компонент (наприклад, `BookingDraft`); тестом або демонстрацією довести, що два отримання prototype дають різні екземпляри. Не будувати через це окрему архітектуру.
-- [ ] Продемонструвати **три способи DI**: constructor (основний спосіб у сервісах), setter і field (`@Autowired` у невеликих демонстраційних компонентах). Чітко показати ці місця під час захисту.
-- [ ] Unit-тести: створення сеансу, бронювання, повторна бронь, відсутній сеанс/місце.
+- [ ] Create a Spring Boot project with **Spring Web + Thymeleaf**; add Validation and Test for convenience.
+- [ ] Create `Screening`, `Seat`, `Ticket`, and repository interfaces.
+- [ ] Create **Fake Repositories** backed by `Map` with generated IDs; data stays in memory for now.
+- [ ] Implement `ScreeningService`: list/details, creation, editing, deletion, and automatic creation of 15 seats.
+- [ ] Implement `TicketService`: book an available seat, retrieve/edit/cancel a ticket, and prevent duplicate bookings.
+- [ ] Minimal `@Controller` + Thymeleaf: screening list and a simple booking form (complete pages come in Lab 3).
+- [ ] Demonstrate `@Component`, `@Repository`, `@Service`, `@Controller`.
+- [ ] Demonstrate **`@Bean` in `@Configuration`** (for example, a `Clock` bean).
+- [ ] Demonstrate **singleton and prototype**: a standard singleton service and a small prototype component (for example, `BookingDraft`). Prove through a test or demonstration that two prototype lookups return different instances. Do not build a separate architecture for this.
+- [ ] Demonstrate **three DI styles**: constructor (the main style in services), setter, and field (`@Autowired` in small demonstration components). Clearly show these examples during the defense.
+- [ ] Unit tests: screening creation, booking, duplicate booking, missing screening/seat.
 
-**Критерій готовності:** застосунок запускається, видно сеанси, можна забронювати місце; є конкретні приклади всіх анотацій, двох scopes і трьох DI.
+**Completion criterion:** the application starts, screenings are visible, a seat can be booked, and there are concrete examples of all annotations, both scopes, and all three DI styles.
 
-## 6. Лабораторна №3 — Шаблонізатори / MVC
+## 6. Lab 3 — template engines / MVC
 
-**Розширюємо ЛР №2, не створюємо новий проєкт.** Точні вимоги взято з `Spring-lab-03(1).docx`.
+**Extend Lab 2; do not create a new project.** Exact requirements are taken from `Spring-lab-03(1).docx`.
 
-### Реалізувати
+### Implement
 
-- [ ] Сторінка `/screenings`: список сеансів із посиланнями на деталі.
-- [ ] Сторінка `/screenings/{id}`: дані сеансу та вільні/зайняті місця.
-- [ ] Форма бронювання квитка (`POST`), сторінка підтвердження або повідомлення про помилку.
-- [ ] Прості адміністративні сторінки `/admin/screenings` (створення/редагування/видалення) та `/admin/tickets` (список/зміна імені/скасування).
-- [ ] У шаблонах **хоча б один раз кожне:** `th:if`, `th:unless`, Elvis `?:`, `th:switch` / `th:case`, `th:each`.
-- [ ] XSS: користувацький текст (назва фільму, ім'я покупця) виводити через **`th:text`**, а не `th:utext`; перевірити введення на кшталт `<script>alert(1)</script>`.
-- [ ] Просте відображення помилок і серверна валідація форм.
-- [ ] **Без Spring Security**: автентифікація й авторизація цією лабораторною не вимагаються.
+- [ ] `/screenings`: a list of screenings with links to details.
+- [ ] `/screenings/{id}`: screening information and available/booked seats.
+- [ ] Booking form (`POST`), confirmation page or error message.
+- [ ] Simple administration pages at `/admin/screenings` (create/edit/delete) and `/admin/tickets` (list/rename/cancel).
+- [ ] Use each of the following **at least once** in templates: `th:if`, `th:unless`, Elvis `?:`, `th:switch` / `th:case`, `th:each`.
+- [ ] XSS: render user text (movie title, customer name) with **`th:text`**, not `th:utext`; check input such as `<script>alert(1)</script>`.
+- [ ] Simple error display and server-side form validation.
+- [ ] **No Spring Security**: this lab does not require authentication or authorization.
 
-**Критерій готовності:** увесь основний сценарій працює в браузері; усі Thymeleaf-конструкції є в реальних шаблонах, XSS-рядок не виконується.
+**Completion criterion:** the main scenario works in a browser; all Thymeleaf constructs appear in real templates, and an XSS string does not execute.
 
-## 7. Лабораторна №4 — RESTful вебсервіси
+## 7. Lab 4 — RESTful web services
 
-**Той самий проєкт; додаємо REST поруч із MVC.** Точні вимоги взято з `Spring-lab-04(1).docx`.
+**The same project; add REST alongside MVC.** Exact requirements are taken from `Spring-lab-04(1).docx`.
 
-### Реалізувати
+### Implement
 
-- [ ] `ScreeningRestController` для `/api/screenings`:
-  - `POST /api/screenings` — створити (**201**).
-  - `GET /api/screenings/{id}` — прочитати (**200 / 404**).
-  - `GET /api/screenings` — список із **фільтрацією** (наприклад, `movieTitle`) та **пагінацією** (`page`, `size`).
-  - `PUT /api/screenings/{id}` — повністю оновити (**200 / 400 / 404**).
-  - `DELETE /api/screenings/{id}` — видалити (**204 / 404**).
-- [ ] Два **різні** `PATCH /api/screenings/{id}` за `Content-Type`:
-  - `application/json-patch+json` — **JSON Patch, RFC 6902** (масив операцій).
-  - `application/merge-patch+json` — **JSON Merge Patch, RFC 7386** (JSON-об'єкт).
-  - Використати коректну підтримку цих форматів; **не видавати звичайний частковий PUT за реалізацію обох RFC**. Патчити лише дозволені поля сеансу та валідовувати результат.
-- [ ] Правильні HTTP-коди, включно з **400, 404, 409**, де це доречно, та зрозумілі JSON-помилки (`@RestControllerAdvice`).
-- [ ] DTO для REST-запитів/відповідей, `@Valid` і Jakarta Validation; не повертати напряму mutable доменні об'єкти, якщо це спричиняє проблеми.
-- [ ] **OpenAPI** для **кожної** операції: короткий опис, повний опис, параметри/моделі даних, усі очікувані HTTP-статуси.
-- [ ] Перевірити API через **Postman** за документацією: CRUD, фільтри, пагінація, обидва PATCH і помилки; зберегти колекцію/скриншоти.
+- [ ] `ScreeningRestController` at `/api/screenings`:
+  - `POST /api/screenings` — create (**201**).
+  - `GET /api/screenings/{id}` — read (**200 / 404**).
+  - `GET /api/screenings` — list with **filtering** (for example, `movieTitle`) and **pagination** (`page`, `size`).
+  - `PUT /api/screenings/{id}` — fully update (**200 / 400 / 404**).
+  - `DELETE /api/screenings/{id}` — delete (**204 / 404**).
+- [ ] Two **different** `PATCH /api/screenings/{id}` formats selected by `Content-Type`:
+  - `application/json-patch+json` — **JSON Patch, RFC 6902** (an array of operations).
+  - `application/merge-patch+json` — **JSON Merge Patch, RFC 7386** (a JSON object).
+  - Use correct support for these formats; **do not present an ordinary partial PUT as an implementation of both RFCs**. Patch only permitted screening fields and validate the result.
+- [ ] Correct HTTP codes, including **400, 404, 409** where appropriate, and clear JSON errors (`@RestControllerAdvice`).
+- [ ] REST request/response DTOs, `@Valid`, and Jakarta Validation; avoid returning mutable domain objects directly if that causes problems.
+- [ ] **OpenAPI for every operation**: summary, description, parameters/data models, and all expected HTTP statuses.
+- [ ] Check the API in **Postman** against its documentation: CRUD, filters, pagination, both PATCH formats, and errors; save the collection/screenshots.
 
-**Критерій готовності:** REST працює незалежно від HTML-сторінок та використовує **ті самі сервіси**; приклади Postman відповідають OpenAPI.
+**Completion criterion:** REST works independently of HTML and uses **the same services**; Postman examples match OpenAPI.
 
-## 8. Лабораторна №5 — JDBC та PostgreSQL (попередній план)
+## 8. Lab 5 — JDBC and PostgreSQL (preliminary plan)
 
-> **Увага:** точну методичку №5 поки не додано до цього README. Перелік нижче — узгоджений технічний план продовження; перед виконанням звірити обов'язкові пункти з оригінальним завданням.
+> **Note:** the exact Lab 5 assignment has not yet been incorporated into this README. This is the agreed technical plan; check mandatory requirements against the original assignment before implementation.
 
-- [ ] Підключити PostgreSQL і створити таблиці `screenings`, `seats`, `tickets` з PK/FK та `UNIQUE(tickets.seat_id)`.
-- [ ] Замінити Fake Repository на JDBC-реалізації, **не змінюючи контролери й бізнес-API сервісів**.
-- [ ] Продемонструвати **`JdbcTemplate` і `JdbcClient`** на реальних операціях CRUD / пошуку, якщо цього вимагає методичка.
-- [ ] Генеровані базою ID, коректне читання списків і зв'язків.
-- [ ] `@Transactional` для створення/видалення сеансу разом із місцями, або іншої складеної операції; перевірити **rollback** на помилці.
-- [ ] Тести сховища з реальною тестовою БД / відтворювані SQL-демонстрації.
+- [ ] Connect PostgreSQL and create `screenings`, `seats`, `tickets` tables with PK/FK and `UNIQUE(tickets.seat_id)`.
+- [ ] Replace Fake Repositories with JDBC implementations **without changing controllers or the service business API**.
+- [ ] Demonstrate **`JdbcTemplate` and `JdbcClient`** in real CRUD/search operations if required by the assignment.
+- [ ] Database-generated IDs and correct reading of lists and relationships.
+- [ ] `@Transactional` for creating/deleting a screening together with its seats, or another compound operation; verify **rollback** on error.
+- [ ] Storage tests using a real test database / reproducible SQL demonstrations.
 
-**Критерій готовності:** після перезапуску застосунку дані зберігаються; сценарії ЛР №2–4 продовжують працювати.
+**Completion criterion:** data survives application restarts, and Lab 2–4 scenarios continue to work.
 
-## 9. Лабораторна №6 — Spring Data JPA (попередній план)
+## 9. Lab 6 — Spring Data JPA (preliminary plan)
 
-> **Увага:** точну методичку №6 ще потрібно звірити. Не сприймати цей список як дослівні вимоги викладача.
+> **Note:** the exact Lab 6 assignment still needs to be checked. Do not treat this list as the instructor's verbatim requirements.
 
-- [ ] Перейти з JDBC на Spring Data JPA / Hibernate, не переписуючи MVC та REST.
-- [ ] `@Entity`, `@Id`, `@GeneratedValue`, Spring Data `CrudRepository` (або `JpaRepository`, якщо дозволено умовою).
-- [ ] Продемонструвати **1:N** на `Screening → Seat`; коректно працювати з квитками.
-- [ ] Три способи запитів, якщо вони вимагаються: **derived query method**, JPQL **`@Query`**, **`@NamedQuery`** (наприклад, пошук сеансів за фільмом/часом і квитків певного сеансу).
-- [ ] Перевірити транзакції, створення, читання, оновлення, видалення та відсутність подвійного бронювання.
-- [ ] Перевірити, що HTML і REST ЛР №2–4 не зламалися після заміни сховища.
+- [ ] Migrate to Spring Data JPA / Hibernate without rewriting MVC or REST.
+- [ ] `@Entity`, `@Id`, `@GeneratedValue`, Spring Data `CrudRepository` (or `JpaRepository` if allowed).
+- [ ] Demonstrate **1:N** for `Screening → Seat`; handle tickets correctly.
+- [ ] Three query styles if required: **derived query methods**, JPQL **`@Query`**, **`@NamedQuery`** (for example, searches by movie/time and tickets for a screening).
+- [ ] Check transactions, creation, reads, updates, deletion, and double-booking prevention.
+- [ ] Verify that HTML and REST from Labs 2–4 still work after replacing storage.
 
-**Критерій готовності:** той самий функціонал працює на JPA; запити та зв'язок сутностей демонструються в коді й у тестах.
+**Completion criterion:** the same functionality works on JPA; queries and entity relationships are demonstrated in code and tests.
 
-## 10. Перелік сценаріїв, які повинні працювати завжди
+## 10. Scenarios that must always work
 
-1. Створити сеанс → отримати його ID → побачити 15 місць.
-2. Відкрити список сеансів → переглянути конкретний сеанс.
-3. Забронювати місце → отримати квиток → побачити місце як зайняте.
-4. Спробувати забронювати те саме місце повторно → отримати зрозумілу помилку.
-5. Змінити ім'я у квитку / скасувати квиток → місце знову вільне після скасування.
-6. Оновити або видалити сеанс → не залишити некоректних пов'язаних даних.
-7. Для ЛР №4: пройти всі REST-операції, обидва PATCH, фільтрацію й пагінацію.
-8. Для ЛР №5–6: перезапустити застосунок і перевірити збереження даних та цілісність зв'язків.
+1. Create a screening → obtain its ID → see 15 seats.
+2. Open the screening list → view a particular screening.
+3. Book a seat → obtain a ticket → see the seat as booked.
+4. Try to book the same seat again → receive a clear error.
+5. Change a ticket's customer name / cancel a ticket → the seat becomes available after cancellation.
+6. Update or delete a screening → leave no invalid related data.
+7. For Lab 4: exercise all REST operations, filters, pagination, both PATCH formats, and errors.
+8. For Labs 5–6: restart the application and check persistence and relationship integrity.
 
-## 11. Як почати роботу
+## 11. Getting started
 
-1. Створити **новий невеликий репозиторій** `AbsoluteSvinema`, а не переносити весь старий великий BlindPig.
-2. У Spring Initializr вибрати Maven, Java, Spring Web, Thymeleaf, Validation і Spring Boot Starter Test (або відповідні starter-и вашої версії).
-3. Додати цей README в корінь репозиторію.
-4. **Учасник №1** реалізує тільки розділ **«Лабораторна №2»**; інші поки не змінюють його файли.
-5. Після успішного `mvn test` та ручного запуску — review, merge, тег `lab-2`, передача учаснику №2. Так само №3 → №4 → №5 → №6.
-6. Звіт готується окремо **до кожної лабораторної** за вимогами викладача; зберігайте підтвердження у `docs/lab-N/`.
+1. Create a **new small repository**, `AbsoluteSvinema`, instead of copying the entire old BlindPig project.
+2. In Spring Initializr, select Maven, Java, Spring Web, Thymeleaf, Validation, and Spring Boot Starter Test (or the corresponding starters for your version).
+3. Add this README to the repository root.
+4. **Participant 1** implements only **Lab 2**; the others should not change that participant's files yet.
+5. After successful `mvn test` and a manual startup: review, merge, `lab-2` tag, and handoff to participant 2. Repeat for Labs 3 → 4 → 5 → 6.
+6. Prepare a separate report **for each lab** according to the instructor's requirements; store evidence in `docs/lab-N/`.
 
-### Правило для Codex / AI-асистента
+### Rule for Codex / AI assistants
 
-> Реалізуй **лише поточну лабораторну** за цим README і відповідною методичкою. Пріоритет — **найпростіше коректне рішення**, що покриває всі обов'язкові пункти. Не додавай непотрібні сутності, endpoint-и, авторизацію, складні абстракції чи функціонал наступних лабораторних. Зберігай основні бізнес-сценарії та сумісність із уже зробленими етапами. Наприкінці запусти тести, покажи змінені файли й результат. **Не виконуй git add/commit/push без окремої команди.**
+> Implement **only the current lab** according to this README and its assignment. Prioritize **the simplest correct solution** covering all mandatory requirements. Do not add unnecessary entities, endpoints, authentication, complex abstractions, or future-lab features. Preserve the main business scenarios and compatibility with completed stages. Run tests, list changed files, and report results at the end. **Do not run git add/commit/push without a separate instruction.**
 
 ---
 
-**Філософія проєкту:** *small, complete, understandable*. Це має бути хороший навчальний Spring-проєкт, а не імітація великого комерційного кінотеатру.
+**Project philosophy:** *small, complete, understandable*. This should be a good educational Spring project, not an imitation of a large commercial cinema.
