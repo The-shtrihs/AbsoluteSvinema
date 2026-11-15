@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Sign In — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>Sign In</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container" style="max-width: 480px; margin-top: 20px;">
+        <div class="glass-panel" style="padding: 40px 32px;">
+            <div style="text-align: center; margin-bottom: 28px;">
+                <span class="brand-icon" style="margin: 0 auto 12px; width: 44px; height: 44px; font-size: 1.4rem;">🔐</span>
+                <h1 style="font-size: 1.8rem; font-weight: 800;">Welcome Back</h1>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Sign in to your cinema account</p>
+            </div>
+
+            <!-- Messages & Errors -->
+            <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
+            <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="user@svinema.ua" required autofocus>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 10px;">
+                    Sign In
+                </button>
+            </form>
+
+            <div style="margin-top: 24px; text-align: center; font-size: 0.9rem; color: var(--text-muted);">
+                Don't have an account?
+                <a th:href="@{/register}" style="color: var(--accent-cyan); text-decoration: none; font-weight: 600;">Register here</a>
+            </div>
+
+            <div style="margin-top: 20px; padding: 12px; background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-size: 0.8rem; color: var(--text-dim);">
+                <strong>Demo Accounts:</strong><br>
+                Admin: <code>admin@svinema.ua</code> / <code>admin123</code><br>
+                User: <code>user@svinema.ua</code> / <code>user123</code>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
