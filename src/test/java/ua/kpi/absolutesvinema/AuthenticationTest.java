@@ -15,6 +15,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.logout;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -55,7 +56,7 @@ class AuthenticationTest {
         String uniqueEmail = "test_" + System.currentTimeMillis() + "@svinema.ua";
 
         // Successful registration
-        mockMvc.perform(post("/register")
+        mockMvc.perform(post("/register").with(csrf())
                         .param("email", uniqueEmail)
                         .param("password", "secret123")
                         .param("fullName", "Test User"))
@@ -66,7 +67,7 @@ class AuthenticationTest {
         assertThat(userService.findByEmail(uniqueEmail).get().role()).isEqualTo("ROLE_USER");
 
         // Duplicate email rejection
-        mockMvc.perform(post("/register")
+        mockMvc.perform(post("/register").with(csrf())
                         .param("email", uniqueEmail)
                         .param("password", "another123")
                         .param("fullName", "Duplicate User"))

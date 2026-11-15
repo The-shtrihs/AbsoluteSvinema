@@ -11,13 +11,15 @@ import ua.kpi.absolutesvinema.service.TicketService;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.net.CookieManager;
+import java.net.CookiePolicy;
+import java.util.regex.Pattern;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,7 +49,7 @@ class ScreeningMvcTest {
 
     @Test
     void rendersPagesAndHandlesBookingAndErrors() throws Exception {
-        try (var client = HttpClient.newHttpClient()) {
+        try (var client = HttpClient.newBuilder().cookieHandler(new CookieManager(null, CookiePolicy.ACCEPT_ALL)).build()) {
             var screening = screenings.create("Test film", "A full <description>", 113,
                     LocalDateTime.of(2027, 1, 10, 18, 30), "Test hall", new BigDecimal("175.00"));
             var seatId = screenings.findSeats(screening.id()).getFirst().id();
@@ -65,19 +67,19 @@ class ScreeningMvcTest {
             assertThat(booked.headers().firstValue("Location").orElseThrow().split(";", 2)[0])
                     .isEqualTo("http://localhost:" + port + path);
             assertThat(tickets.isSeatBooked(seatId)).isTrue();
-            var confirmation = getWithCookies(client, path, booked);
+            var confirmation = getWithCookies(client, path);
             assertThat(confirmation.body()).contains("Seat booked successfully.", "Booked");
             assertThat(confirmation.body()).doesNotContain("name=\"seatId\" value=\"" + seatId + "\"");
 
             var duplicate = post(client, path, seatId, "Ivan");
             assertThat(duplicate.statusCode()).isEqualTo(302);
-            assertThat(getWithCookies(client, path, duplicate).body()).contains("This seat is already booked");
+            assertThat(getWithCookies(client, path).body()).contains("This seat is already booked");
             assertThat(tickets.findAll().stream().filter(ticket -> ticket.seatId().equals(seatId))).hasSize(1);
 
             var freeSeat = screenings.findSeats(screening.id()).get(1).id();
             var invalid = post(client, path, freeSeat, "  ");
             assertThat(invalid.statusCode()).isEqualTo(302);
-            assertThat(getWithCookies(client, path, invalid).body()).contains("Please enter a non-blank customer name");
+            assertThat(getWithCookies(client, path).body()).contains("Please enter a non-blank customer name");
             assertThat(tickets.isSeatBooked(freeSeat)).isFalse();
             assertThat(get(client, "/screenings/999999").statusCode()).isEqualTo(404);
             assertThat(post(client, path, 999999L, "Anna").statusCode()).isEqualTo(404);
@@ -94,17 +96,20 @@ class ScreeningMvcTest {
         return client.send(HttpRequest.newBuilder(url(path)).GET().build(), HttpResponse.BodyHandlers.ofString());
     }
 
-    private HttpResponse<String> getWithCookies(HttpClient client, String path, HttpResponse<?> previous)
+    private HttpResponse<String> getWithCookies(HttpClient client, String path)
             throws Exception {
-        List<String> cookies = previous.headers().allValues("Set-Cookie").stream()
-                .map(cookie -> cookie.split(";", 2)[0]).toList();
-        assertThat(cookies).isNotEmpty();
-        return client.send(HttpRequest.newBuilder(url(path)).header("Cookie", String.join("; ", cookies))
-                .GET().build(), HttpResponse.BodyHandlers.ofString());
+        assertThat(client.cookieHandler().orElseThrow().get(url(path), java.util.Map.of()))
+                .containsKey("Cookie");
+        assertThat(((CookieManager) client.cookieHandler().orElseThrow()).getCookieStore().getCookies())
+                .isNotEmpty();
+        return get(client, path);
     }
 
     private HttpResponse<String> post(HttpClient client, String path, Long seatId, String name) throws Exception {
-        String body = "seatId=" + seatId + "&customerName=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
+        var page = get(client, path);
+        var token = Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"").matcher(page.body());
+        assertThat(token.find()).isTrue();
+        String body = "_csrf=" + URLEncoder.encode(token.group(1), StandardCharsets.UTF_8) + "&seatId=" + seatId + "&customerName=" + URLEncoder.encode(name, StandardCharsets.UTF_8);
         return client.send(HttpRequest.newBuilder(url(path + "/book"))
                 .header("Content-Type", "application/x-www-form-urlencoded")
                 .POST(HttpRequest.BodyPublishers.ofString(body)).build(), HttpResponse.BodyHandlers.ofString());

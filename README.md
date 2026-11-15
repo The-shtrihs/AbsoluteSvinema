@@ -8,11 +8,11 @@
 **Variant 6 assignment:**
 
 - **Entities in the assignment:** screening, seat.
-- **Actors:** guest, administrator.
+- **Actors:** guest, registered user, administrator.
 - **Guest:** views screenings and books tickets.
 - **Administrator:** creates, edits, and deletes screening and ticket information.
 
-We introduce a **ticket** as a third simple model to represent a booking. Do not create separate `Movie`, `User`, `Payment`, `CinemaHall`, `Order`, `Role`, or similar entities: they are unnecessary for this educational task.
+The implemented models are `Screening`, `Seat`, `Ticket`, and `User`. Movie information belongs to a screening; no separate movie, payment, or hall entity is needed.
 
 ### MVP capabilities
 
@@ -21,10 +21,13 @@ We introduce a **ticket** as a third simple model to represent a booking. Do not
 3. Lets a guest book an available seat by providing a name.
 4. Prevents booking the same seat twice.
 5. Lets an administrator manage screenings and tickets through simple pages.
-6. Provides the screening REST API capabilities required by Lab 4.
-7. Replaces storage gradually: **in-memory (Labs 2–4) → JDBC (Lab 5) → JPA (Lab 6)**.
+6. Supports registration, session-based login/logout, My Tickets, and cancellation of the current user’s own tickets.
+7. Protects administration with the ADMIN role; registered users have the USER role.
+8. Future stages add REST (Lab 4) and replace storage gradually: **in-memory (Labs 2–4) → JDBC (Lab 5) → JPA (Lab 6)**.
 
-**Out of scope:** registration, authentication, authorization, payments, QR codes, email/SMS, personal accounts, database roles, interactive JavaScript seat maps, microservices, mandatory Docker/Kubernetes, and a complex frontend. The `/admin/**` pages are educational and **have no access protection**; the Lab 3–4 assignments allow this. Do not describe this solution as production-ready.
+Authentication uses Spring Security sessions and BCrypt password hashing. Standard CSRF protection covers all POST forms through Thymeleaf integration. Guests can browse and book seats; only the owning user can cancel a ticket through My Tickets. Administrators can manage all screenings and tickets, including guest bookings.
+
+**Out of scope:** payments, QR codes, email/SMS, complex frontend architecture, and production deployment hardening. Storage is currently in memory and resets on restart.
 
 ## 2. Data models
 
@@ -32,7 +35,8 @@ We introduce a **ticket** as a third simple model to represent a booking. Do not
 |---|---|---|
 | `Screening` | `id`, `movieTitle`, `movieDescription`, `movieDurationMinutes`, `startsAt`, `hall`, `ticketPrice` | A screening of a particular movie |
 | `Seat` | `id`, `screeningId`, `rowNumber`, `seatNumber` | A seat **in a particular screening** |
-| `Ticket` | `id`, `seatId`, `customerName`, `bookedAt` | A booking for one seat |
+| `Ticket` | `id`, `seatId`, `userId` (nullable for guests), `customerName`, `bookedAt` | A booking for one seat |
+| `User` | `id`, `email`, `password` (BCrypt hash), `fullName`, `role` | Registered account with USER or ADMIN access |
 
 **Conventions:**
 
@@ -48,6 +52,7 @@ We introduce a **ticket** as a third simple model to represent a booking. Do not
 
 ```mermaid
 erDiagram
+    USER o|--o{ TICKET : owns
     SCREENING ||--|{ SEAT : contains
     SEAT ||--o| TICKET : booked_by
     SCREENING {
@@ -68,6 +73,7 @@ erDiagram
     TICKET {
         long id PK
         long seatId FK
+        long userId FK
         string customerName
         datetime bookedAt
     }
@@ -77,17 +83,17 @@ erDiagram
 
 **Name:** `AbsoluteSvinema` · **GitHub repo:** `AbsoluteSvinema` · **Maven artifactId:** `absolute-svinema` · **Java package:** `ua.kpi.absolutesvinema`.
 
-**Foundation:** Java 21+ (the team should use the same JDK version), Spring Boot, Maven, Spring Web, Thymeleaf, Jakarta Bean Validation, JUnit 5. Add springdoc-openapi for Lab 4; Spring JDBC and PostgreSQL for Lab 5; Spring Data JPA for Lab 6. Lombok is optional: agree on a style once and avoid spending time rewriting it.
+**Foundation:** Java 21+ (the team should use the same JDK version), Spring Boot, Maven, Spring MVC, Thymeleaf, Spring Security, Jakarta Bean Validation, JUnit 5. Add springdoc-openapi for Lab 4; Spring JDBC and PostgreSQL for Lab 5; Spring Data JPA for Lab 6. Lombok is optional: agree on a style once and avoid spending time rewriting it.
 
 ```text
 src/main/java/ua/kpi/absolutesvinema/
 ├── AbsoluteSvinemaApplication.java
-├── model/                 Screening, Seat, Ticket
-├── repository/            ScreeningRepository, SeatRepository, TicketRepository
+├── model/                 Screening, Seat, Ticket, User
+├── repository/            ScreeningRepository, SeatRepository, TicketRepository, UserRepository
 │   └── memory/            InMemory...Repository (Labs 2–4)
-├── service/               ScreeningService, TicketService
+├── service/               ScreeningService, TicketService, UserService
 ├── controller/            MVC controllers (Labs 2–3)
-├── api/                   REST controller, request/response DTOs (Lab 4)
+├── api/                   Planned REST controller and DTOs (Lab 4; not implemented)
 ├── config/                Spring configuration + DI/scope examples
 └── exception/             Clear errors + HTTP handler
 
@@ -132,44 +138,44 @@ Before handing a stage to the next participant, its owner:
 
 No agent or Codex may **commit or push without a person's permission**.
 
-## 5. Lab 2 — creating and connecting components
+## 5. Lab 2 — creating and connecting components (completed)
 
 **The project foundation.** Exact requirements are taken from `Spring-lab-02(1).docx`.
 
-### Implement
+### Implemented
 
-- [ ] Create a Spring Boot project with **Spring Web + Thymeleaf**; add Validation and Test for convenience.
-- [ ] Create `Screening`, `Seat`, `Ticket`, and repository interfaces.
-- [ ] Create **Fake Repositories** backed by `Map` with generated IDs; data stays in memory for now.
-- [ ] Implement `ScreeningService`: list/details, creation, editing, deletion, and automatic creation of 15 seats.
-- [ ] Implement `TicketService`: book an available seat, retrieve/edit/cancel a ticket, and prevent duplicate bookings.
-- [ ] Minimal `@Controller` + Thymeleaf: screening list and a simple booking form (complete pages come in Lab 3).
-- [ ] Demonstrate `@Component`, `@Repository`, `@Service`, `@Controller`.
-- [ ] Demonstrate **`@Bean` in `@Configuration`** (for example, a `Clock` bean).
-- [ ] Demonstrate **singleton and prototype**: a standard singleton service and a small prototype component (for example, `BookingDraft`). Prove through a test or demonstration that two prototype lookups return different instances. Do not build a separate architecture for this.
-- [ ] Demonstrate **three DI styles**: constructor (the main style in services), setter, and field (`@Autowired` in small demonstration components). Clearly show these examples during the defense.
-- [ ] Unit tests: screening creation, booking, duplicate booking, missing screening/seat.
+- [x] Create a Spring Boot project with **Spring Web + Thymeleaf**; add Validation and Test for convenience.
+- [x] Create `Screening`, `Seat`, `Ticket`, and repository interfaces.
+- [x] Create **Fake Repositories** backed by `Map` with generated IDs; data stays in memory for now.
+- [x] Implement `ScreeningService`: list/details, creation, editing, deletion, and automatic creation of 15 seats.
+- [x] Implement `TicketService`: book an available seat, retrieve/edit/cancel a ticket, and prevent duplicate bookings.
+- [x] Minimal `@Controller` + Thymeleaf: screening list and a simple booking form (complete pages come in Lab 3).
+- [x] Demonstrate `@Component`, `@Repository`, `@Service`, `@Controller`.
+- [x] Demonstrate **`@Bean` in `@Configuration`** (for example, a `Clock` bean).
+- [x] Demonstrate **singleton and prototype**: a standard singleton service and a small prototype component (for example, `BookingDraft`). Prove through a test or demonstration that two prototype lookups return different instances. Do not build a separate architecture for this.
+- [x] Demonstrate **three DI styles**: constructor (the main style in services), setter, and field (`@Autowired` in small demonstration components). Clearly show these examples during the defense.
+- [x] Unit tests: screening creation, booking, duplicate booking, missing screening/seat.
 
 **Completion criterion:** the application starts, screenings are visible, a seat can be booked, and there are concrete examples of all annotations, both scopes, and all three DI styles.
 
-## 6. Lab 3 — template engines / MVC
+## 6. Lab 3 — template engines / MVC (completed)
 
 **Extend Lab 2; do not create a new project.** Exact requirements are taken from `Spring-lab-03(1).docx`.
 
-### Implement
+### Implemented
 
-- [ ] `/screenings`: a list of screenings with links to details.
-- [ ] `/screenings/{id}`: screening information and available/booked seats.
-- [ ] Booking form (`POST`), confirmation page or error message.
-- [ ] Simple administration pages at `/admin/screenings` (create/edit/delete) and `/admin/tickets` (list/rename/cancel).
-- [ ] Use each of the following **at least once** in templates: `th:if`, `th:unless`, Elvis `?:`, `th:switch` / `th:case`, `th:each`.
-- [ ] XSS: render user text (movie title, customer name) with **`th:text`**, not `th:utext`; check input such as `<script>alert(1)</script>`.
-- [ ] Simple error display and server-side form validation.
-- [ ] **No Spring Security**: this lab does not require authentication or authorization.
+- [x] `/screenings`: a list of screenings with links to details.
+- [x] `/screenings/{id}`: screening information and available/booked seats.
+- [x] Booking form (`POST`), confirmation page or error message.
+- [x] Simple administration pages at `/admin/screenings` (create/edit/delete) and `/admin/tickets` (list/rename/cancel).
+- [x] Use each of the following **at least once** in templates: `th:if`, `th:unless`, Elvis `?:`, `th:switch` / `th:case`, `th:each`.
+- [x] XSS: render user text (movie title, customer name) with **`th:text`**, not `th:utext`; check input such as `<script>alert(1)</script>`.
+- [x] Simple error display and server-side form validation.
+- [x] Spring Security: session login/logout, registration, BCrypt, USER/ADMIN authorization, user-owned tickets, and CSRF protection.
 
 **Completion criterion:** the main scenario works in a browser; all Thymeleaf constructs appear in real templates, and an XSS string does not execute.
 
-## 7. Lab 4 — RESTful web services
+## 7. Lab 4 — RESTful web services (future)
 
 **The same project; add REST alongside MVC.** Exact requirements are taken from `Spring-lab-04(1).docx`.
 
@@ -231,16 +237,35 @@ No agent or Codex may **commit or push without a person's permission**.
 
 ## 11. Getting started
 
-1. Create a **new small repository**, `AbsoluteSvinema`, instead of copying the entire old BlindPig project.
-2. In Spring Initializr, select Maven, Java, Spring Web, Thymeleaf, Validation, and Spring Boot Starter Test (or the corresponding starters for your version).
-3. Add this README to the repository root.
-4. **Participant 1** implements only **Lab 2**; the others should not change that participant's files yet.
-5. After successful `mvn test` and a manual startup: review, merge, `lab-2` tag, and handoff to participant 2. Repeat for Labs 3 → 4 → 5 → 6.
-6. Prepare a separate report **for each lab** according to the instructor's requirements; store evidence in `docs/lab-N/`.
+Requires JDK 21+ and Maven. From the repository root:
+
+```sh
+mvn compile
+mvn test
+mvn spring-boot:run
+```
+
+Open `http://localhost:8080`. Demo movies are **Interstellar**, **Pulp Fiction**, and **The Lord of the Rings: The Return of the King**. Each screening has 15 seats.
+
+Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin123` (ADMIN). These are educational credentials.
+
+| Routes | Access / behavior |
+|---|---|
+| `GET /`, `/screenings`, `/screenings/{id}` | Public home, listing, details |
+| `POST /screenings/{id}/book` | Guest or authenticated seat booking |
+| `GET /login`, `POST /login`, `GET /register`, `POST /register` | Public authentication and registration |
+| `POST /logout` | End the current session |
+| `GET /tickets/my`, `POST /tickets/{id}/cancel` | Authenticated user's tickets; cancellation requires ownership |
+| `GET /admin/screenings`, `/admin/screenings/new`, `/admin/screenings/{id}/edit` | ADMIN screening pages |
+| `POST /admin/screenings`, `/admin/screenings/{id}/edit`, `/admin/screenings/{id}/delete` | ADMIN screening management |
+| `GET /admin/tickets`, `/admin/tickets/{id}/edit` | ADMIN ticket pages |
+| `POST /admin/tickets/{id}/edit`, `/admin/tickets/{id}/cancel` | ADMIN ticket management |
+
+All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2 and 3 are implemented; Labs 4–6 above remain future requirements. Store each lab's report evidence in `docs/lab-N/`.
 
 ### Rule for Codex / AI assistants
 
-> Implement **only the current lab** according to this README and its assignment. Prioritize **the simplest correct solution** covering all mandatory requirements. Do not add unnecessary entities, endpoints, authentication, complex abstractions, or future-lab features. Preserve the main business scenarios and compatibility with completed stages. Run tests, list changed files, and report results at the end. **Do not run git add/commit/push without a separate instruction.**
+> Implement **only the current lab** according to this README and its assignment. Prioritize **the simplest correct solution** covering all mandatory requirements. Do not add unnecessary entities, endpoints, complex abstractions, or future-lab features. Preserve the main business scenarios and compatibility with completed stages. Run tests, list changed files, and report results at the end. **Do not run git add/commit/push without a separate instruction.**
 
 ---
 

@@ -1,6 +1,7 @@
 package ua.kpi.absolutesvinema.controller;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,8 +27,7 @@ public class UserTicketController {
 
     @GetMapping("/my")
     public String myTickets(Principal principal, Model model) {
-        User user = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new IllegalStateException("User not found: " + principal.getName()));
+        User user = currentUser(principal);
 
         var userTickets = ticketService.findUserTicketsWithDetails(user.id());
         model.addAttribute("tickets", userTickets);
@@ -35,10 +35,17 @@ public class UserTicketController {
         return "tickets/my";
     }
 
+    private User currentUser(Principal principal) {
+        if (principal == null) {
+            throw new AccessDeniedException("Authentication required.");
+        }
+        return userService.findByEmail(principal.getName())
+                .orElseThrow(() -> new AccessDeniedException("Authenticated user not found."));
+    }
+
     @PostMapping("/{id}/cancel")
     public String cancelTicket(@PathVariable Long id, Principal principal, RedirectAttributes redirect) {
-        User user = userService.findByEmail(principal.getName())
-                .orElseThrow(() -> new IllegalStateException("User not found: " + principal.getName()));
+        User user = currentUser(principal);
 
         try {
             ticketService.cancelUserTicket(id, user.id());

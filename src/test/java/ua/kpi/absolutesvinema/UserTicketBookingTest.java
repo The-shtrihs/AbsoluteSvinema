@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -73,7 +74,7 @@ class UserTicketBookingTest {
         Seat seat = screeningService.findSeats(screening.id()).getFirst();
 
         // Book seat as logged in user
-        mockMvc.perform(post("/screenings/" + screening.id() + "/book")
+        mockMvc.perform(post("/screenings/" + screening.id() + "/book").with(csrf())
                         .param("seatId", seat.id().toString())
                         .param("customerName", "Danylo Marchenko"))
                 .andExpect(status().is3xxRedirection())
@@ -96,11 +97,45 @@ class UserTicketBookingTest {
                 .andExpect(content().string(containsString("250.00")));
 
         // Cancel the ticket
-        mockMvc.perform(post("/tickets/" + bookedTicket.ticket().id() + "/cancel"))
+        mockMvc.perform(post("/tickets/" + bookedTicket.ticket().id() + "/cancel").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/tickets/my"));
 
         // Verify seat is available again
         assertThat(ticketService.isSeatBooked(seat.id())).isFalse();
     }
+    @Test
+    void anonymousCancellationRequiresLoginEvenWithCsrf() throws Exception {
+        mockMvc.perform(post("/tickets/1/cancel").with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    @WithMockUser(username = "user@svinema.ua")
+    void otherUsersAndGuestTicketsCannotBeCancelled() throws Exception {
+        var screening = screeningService.create("Ownership", "Test", 90,
+                LocalDateTime.now().plusDays(1), "Hall", BigDecimal.TEN);
+        var seats = screeningService.findSeats(screening.id());
+        var other = userService.findByEmail("admin@svinema.ua").orElseThrow();
+        var otherTicket = ticketService.book(seats.get(0).id(), other.id(), "Other owner");
+        var guestTicket = ticketService.book(seats.get(1).id(), "Guest owner");
+        for (var ticket : java.util.List.of(otherTicket, guestTicket)) {
+            mockMvc.perform(post("/tickets/" + ticket.id() + "/cancel").with(csrf()))
+                    .andExpect(redirectedUrl("/tickets/my"))
+                    .andExpect(flash().attribute("error", "You cannot cancel another user's ticket."));
+            assertThat(ticketService.findById(ticket.id())).isEqualTo(ticket);
+        }
+        mockMvc.perform(get("/tickets/my"))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Other owner"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Guest owner"))));
+    }
+
+    @Test
+    @WithMockUser(username = "missing@example.com")
+    void unknownAuthenticatedUserIsDenied() throws Exception {
+        mockMvc.perform(get("/tickets/my")).andExpect(status().isForbidden());
+        mockMvc.perform(post("/tickets/1/cancel").with(csrf())).andExpect(status().isForbidden());
+    }
+
 }

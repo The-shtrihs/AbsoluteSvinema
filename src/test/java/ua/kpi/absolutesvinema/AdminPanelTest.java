@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -65,6 +66,8 @@ class AdminPanelTest {
 
         mockMvc.perform(get("/admin/tickets"))
                 .andExpect(status().isForbidden());
+        mockMvc.perform(post("/admin/screenings/1/delete").with(csrf()))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -81,7 +84,7 @@ class AdminPanelTest {
                 .andExpect(content().string(containsString("Create New Screening")));
 
         // Validation error on blank title
-        mockMvc.perform(post("/admin/screenings")
+        mockMvc.perform(post("/admin/screenings").with(csrf())
                         .param("movieTitle", "  ")
                         .param("movieDescription", "Some desc")
                         .param("movieDurationMinutes", "100")
@@ -94,7 +97,7 @@ class AdminPanelTest {
 
         // Create valid screening
         String uniqueTitle = "Admin Created Movie " + System.currentTimeMillis();
-        mockMvc.perform(post("/admin/screenings")
+        mockMvc.perform(post("/admin/screenings").with(csrf())
                         .param("movieTitle", uniqueTitle)
                         .param("movieDescription", "Created by admin")
                         .param("movieDurationMinutes", "145")
@@ -117,7 +120,7 @@ class AdminPanelTest {
                 .andExpect(content().string(containsString("Edit Screening #" + created.id())));
 
         // Update screening
-        mockMvc.perform(post("/admin/screenings/" + created.id() + "/edit")
+        mockMvc.perform(post("/admin/screenings/" + created.id() + "/edit").with(csrf())
                         .param("movieTitle", uniqueTitle + " (Updated)")
                         .param("movieDescription", "Updated description")
                         .param("movieDurationMinutes", "150")
@@ -130,7 +133,7 @@ class AdminPanelTest {
         assertThat(screeningService.findById(created.id()).movieTitle()).contains("(Updated)");
 
         // Delete screening
-        mockMvc.perform(post("/admin/screenings/" + created.id() + "/delete"))
+        mockMvc.perform(post("/admin/screenings/" + created.id() + "/delete").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/screenings"));
 
@@ -163,7 +166,7 @@ class AdminPanelTest {
                 .andExpect(content().string(containsString("Edit Ticket #" + ticket.id())));
 
         // Update customer name
-        mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/edit")
+        mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/edit").with(csrf())
                         .param("customerName", "Renamed Customer"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/tickets"));
@@ -171,10 +174,52 @@ class AdminPanelTest {
         assertThat(ticketService.findById(ticket.id()).customerName()).isEqualTo("Renamed Customer");
 
         // Cancel ticket
-        mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/cancel"))
+        mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/cancel").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/tickets"));
 
         assertThat(ticketService.isSeatBooked(seat.id())).isFalse();
     }
+    @Test
+    @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
+    void allRenderedPostFormsContainExactlyOneCsrfToken() throws Exception {
+        var screening = screeningService.create("CSRF forms", "Test", 90,
+                LocalDateTime.now().plusDays(1), "Hall", BigDecimal.TEN);
+        var admin = context.getBean(ua.kpi.absolutesvinema.service.UserService.class)
+                .findByEmail("admin@svinema.ua").orElseThrow();
+        var ticket = ticketService.book(screeningService.findSeats(screening.id()).getFirst().id(),
+                admin.id(), "CSRF owner");
+        for (String path : java.util.List.of("/login", "/register", "/", "/screenings/" + screening.id(),
+                "/tickets/my", "/admin/screenings", "/admin/screenings/new",
+                "/admin/screenings/" + screening.id() + "/edit", "/admin/tickets",
+                "/admin/tickets/" + ticket.id() + "/edit")) {
+            var result = mockMvc.perform(get(path)).andExpect(status().isOk()).andReturn();
+            var forms = java.util.regex.Pattern.compile("<form\\b[^>]*>.*?</form>",
+                    java.util.regex.Pattern.DOTALL).matcher(result.getResponse().getContentAsString());
+            int count = 0;
+            while (forms.find()) {
+                String form = forms.group();
+                if (!form.contains("method=\"post\"")) continue;
+                count++;
+                var tokens = java.util.regex.Pattern.compile("name=\"_csrf\"[^>]*value=\"([^\"]+)\"")
+                        .matcher(form);
+                assertThat(tokens.find()).as("CSRF token in %s", path).isTrue();
+                assertThat(tokens.group(1)).isEqualTo(((org.springframework.security.web.csrf.CsrfToken)
+                        result.getRequest().getAttribute("_csrf")).getToken());
+                assertThat(tokens.find()).as("No duplicate token in %s", path).isFalse();
+            }
+            assertThat(count).as("POST forms on %s", path).isPositive();
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
+    void postWithoutCsrfIsRejectedAcrossAllFormRoutes() throws Exception {
+        for (String path : java.util.List.of("/login", "/register", "/logout", "/screenings/1/book",
+                "/tickets/1/cancel", "/admin/screenings", "/admin/screenings/1/edit",
+                "/admin/screenings/1/delete", "/admin/tickets/1/edit", "/admin/tickets/1/cancel")) {
+            mockMvc.perform(post(path)).andExpect(status().isForbidden());
+        }
+    }
+
 }

@@ -67,7 +67,7 @@ public class TicketService {
 
     public void cancelUserTicket(Long ticketId, Long userId) {
         Ticket ticket = findById(ticketId);
-        if (ticket.userId() != null && !ticket.userId().equals(userId)) {
+        if (ticket.userId() == null || !ticket.userId().equals(userId)) {
             throw new IllegalStateException("You cannot cancel another user's ticket.");
         }
         cancel(ticketId);
