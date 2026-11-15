@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='My Tickets — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>My Tickets</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <a th:href="@{/screenings}" class="btn btn-secondary btn-sm" style="margin-bottom: 12px;">← Screenings</a>
+                <h1 class="page-title">My Tickets</h1>
+                <p class="page-subtitle">
+                    Manage your cinema reservations for
+                    <strong style="color: var(--text-main);" th:text="${currentUser.fullName}"></strong>
+                    (<span th:text="${currentUser.email}"></span>)
+                </p>
+            </div>
+            <a th:href="@{/screenings}" class="btn btn-primary">Book Another Seat +</a>
+        </div>
+
+        <!-- Flash alerts -->
+        <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
+        <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
+
+        <!-- Conditional formatting: th:if when no tickets exist -->
+        <div th:if="${tickets.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
+            <div style="font-size: 3rem; margin-bottom: 14px;">🎟️</div>
+            <h2 style="font-size: 1.5rem; margin-bottom: 8px;">No tickets booked yet</h2>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">Browse our screenings list and reserve your favorite seats now!</p>
+            <a th:href="@{/screenings}" class="btn btn-primary">Explore Screenings</a>
+        </div>
+
+        <!-- Conditional formatting: th:unless when tickets exist -->
+        <div th:unless="${tickets.isEmpty()}" class="screenings-grid">
+            <article th:each="td : ${tickets}" class="screening-card" style="border-left: 4px solid var(--accent-emerald);">
+                <div class="card-top">
+                    <div class="card-badges">
+                        <span class="badge badge-standard">Ticket #<span th:text="${td.ticket.id}"></span></span>
+                        <span class="badge badge-imax" th:text="${td.screening.hall}"></span>
+                    </div>
+
+                    <h2 class="card-title" th:text="${td.screening.movieTitle}"></h2>
+
+                    <!-- Elvis operator demonstration -->
+                    <p class="card-desc" th:text="${td.screening.movieDescription ?: 'No synopsis available'}"></p>
+
+                    <div class="card-meta-list">
+                        <div class="card-meta-item">
+                            <span class="meta-label">Screening Time</span>
+                            <span class="meta-value" th:text="${#temporals.format(td.screening.startsAt, 'dd.MM.yyyy HH:mm')}"></span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Reserved Seat</span>
+                            <span class="meta-value" style="color: var(--accent-emerald);">
+                                Row <span th:text="${td.seat.rowNumber}"></span>, Seat <span th:text="${td.seat.seatNumber}"></span>
+                            </span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Ticket Price</span>
+                            <span class="meta-value"><span th:text="${td.screening.ticketPrice}"></span> UAH</span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Booked At</span>
+                            <span class="meta-value" th:text="${#temporals.format(td.ticket.bookedAt, 'dd.MM.yyyy HH:mm')}"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-bottom" style="display: flex; gap: 10px;">
+                    <a th:href="@{/screenings/{id}(id=${td.screening.id})}" class="btn btn-secondary btn-sm" style="flex: 1;">
+                        View Screening
+                    </a>
+                    <form th:action="@{/tickets/{id}/cancel(id=${td.ticket.id})}" method="post" style="flex: 1;">
+                        <button type="submit" class="btn btn-danger btn-sm btn-block"
+                                onclick="return confirm('Are you sure you want to cancel this booking? The seat will be released immediately.');">
+                            Cancel Booking
+                        </button>
+                    </form>
+                </div>
+            </article>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

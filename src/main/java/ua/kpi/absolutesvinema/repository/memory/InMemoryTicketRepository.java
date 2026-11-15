@@ -33,7 +33,7 @@ public class InMemoryTicketRepository implements TicketRepository {
             throw new IllegalStateException("Seat already has a ticket: " + entity.seatId());
         }
         Long id = entity.id() == null ? nextId++ : entity.id();
-        Ticket saved = new Ticket(id, entity.seatId(), entity.customerName(), entity.bookedAt());
+        Ticket saved = new Ticket(id, entity.seatId(), entity.userId(), entity.customerName(), entity.bookedAt());
         tickets.put(id, saved);
         return saved;
     }
@@ -65,6 +65,16 @@ public class InMemoryTicketRepository implements TicketRepository {
         Objects.requireNonNull(seatIds, "Seat IDs are required");
         return tickets.values().stream()
                 .filter(ticket -> seatIds.contains(ticket.seatId()))
+                .toList();
+    }
+
+    @Override
+    public synchronized List<Ticket> findByUserId(Long userId) {
+        if (userId == null) {
+            return List.of();
+        }
+        return tickets.values().stream()
+                .filter(ticket -> Objects.equals(ticket.userId(), userId))
                 .toList();
     }
 }

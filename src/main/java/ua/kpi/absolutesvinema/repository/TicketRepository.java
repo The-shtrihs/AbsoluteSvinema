@@ -19,4 +19,6 @@ public interface TicketRepository {
     Optional<Ticket> findBySeatId(Long seatId);
 
     List<Ticket> findBySeatIdIn(Collection<Long> seatIds);
+
+    List<Ticket> findByUserId(Long userId);
 }
