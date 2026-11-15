@@ -873,6 +873,13 @@ main {
 }
 
 /* Responsive adjustments */
+@media (min-width: 769px) {
+    .seat-row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 120px));
+    }
+}
+
 @media (max-width: 768px) {
     .hero-title {
         font-size: 2.3rem;
