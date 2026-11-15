@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Admin Screenings — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>Admin Screenings</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <a th:href="@{/screenings}" class="btn btn-secondary btn-sm" style="margin-bottom: 12px;">← View Public Screenings</a>
+                <h1 class="page-title">Screenings Management</h1>
+                <p class="page-subtitle">Create, edit, or delete screenings. Each screening automatically generates 15 seats (3 × 5 layout).</p>
+            </div>
+            <a th:href="@{/admin/screenings/new}" class="btn btn-primary">+ Create New Screening</a>
+        </div>
+
+        <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
+        <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
+
+        <!-- Conditional formatting: th:if when empty -->
+        <div th:if="${screenings.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
+            <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 16px;">No screenings currently available in database.</p>
+            <a th:href="@{/admin/screenings/new}" class="btn btn-primary">Create the first screening</a>
+        </div>
+
+        <!-- Conditional formatting: th:unless when not empty -->
+        <div th:unless="${screenings.isEmpty()}" class="glass-panel" style="padding: 0; overflow: hidden;">
+            <div class="data-table-wrap">
+                <table class="data-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Movie Title</th>
+                        <th>Hall</th>
+                        <th>Starts At</th>
+                        <th>Duration</th>
+                        <th>Price (UAH)</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- Iteration using th:each -->
+                    <tr th:each="screening : ${screenings}">
+                        <td><code style="color: var(--accent-cyan);" th:text="${'#' + screening.id}"></code></td>
+                        <td>
+                            <strong th:text="${screening.movieTitle}"></strong>
+                            <div style="font-size: 0.8rem; color: var(--text-dim); max-width: 320px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"
+                                 th:text="${screening.movieDescription ?: 'No description'}"></div>
+                        </td>
+                        <td>
+                            <!-- Demonstrating th:switch in table -->
+                            <span th:switch="${screening.hall}">
+                                <span th:case="'IMAX'" class="badge badge-imax">IMAX</span>
+                                <span th:case="'VIP'" class="badge badge-vip">VIP</span>
+                                <span th:case="*" class="badge badge-standard" th:text="${screening.hall}">Hall</span>
+                            </span>
+                        </td>
+                        <td th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></td>
+                        <td><span th:text="${screening.movieDurationMinutes}"></span> min</td>
+                        <td><strong th:text="${screening.ticketPrice}"></strong></td>
+                        <td>
+                            <div class="table-actions">
+                                <a th:href="@{/screenings/{id}(id=${screening.id})}" class="btn btn-secondary btn-sm" title="View public page">
+                                    View
+                                </a>
+                                <a th:href="@{/admin/screenings/{id}/edit(id=${screening.id})}" class="btn btn-secondary btn-sm">
+                                    Edit
+                                </a>
+                                <form th:action="@{/admin/screenings/{id}/delete(id=${screening.id})}" method="post" style="display: inline; margin: 0;">
+                                    <button type="submit" class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Are you sure you want to delete this screening and all associated seats/tickets?');">
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title=(${isNew} ? 'New Screening' : 'Edit Screening #' + ${screeningId}) + ' — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>Screening Form</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container" style="max-width: 680px;">
+        <div style="margin-bottom: 24px;">
+            <a th:href="@{/admin/screenings}" class="btn btn-secondary btn-sm">← Back to Admin Screenings</a>
+        </div>
+
+        <div class="glass-panel" style="padding: 40px 36px;">
+            <div style="margin-bottom: 28px;">
+                <h1 class="page-title" style="font-size: 2rem;"
+                    th:text="${isNew ? 'Create New Screening' : 'Edit Screening #' + screeningId}">
+                    Screening Form
+                </h1>
+                <p class="page-subtitle" th:text="${isNew ? 'Fill in the screening details. 15 seats (3 × 5) will be generated automatically.' : 'Update screening attributes. Seat numbers and booked tickets remain linked.'}"></p>
+            </div>
+
+            <!-- Server-side Form Validation Demonstration -->
+            <form th:action="${isNew ? '/admin/screenings' : '/admin/screenings/' + screeningId + '/edit'}"
+                  th:object="${screeningForm}" method="post">
+
+                <div class="form-group">
+                    <label class="form-label" for="movieTitle">Movie Title</label>
+                    <input type="text" id="movieTitle" th:field="*{movieTitle}" class="form-control"
+                           placeholder="e.g. Interstellar" required autofocus>
+                    <span th:if="${#fields.hasErrors('movieTitle')}" th:errors="*{movieTitle}" class="form-error"></span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="movieDescription">Movie Description</label>
+                    <textarea id="movieDescription" th:field="*{movieDescription}" class="form-control"
+                              rows="3" placeholder="Provide a short synopsis of the film..." required></textarea>
+                    <span th:if="${#fields.hasErrors('movieDescription')}" th:errors="*{movieDescription}" class="form-error"></span>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="movieDurationMinutes">Duration (minutes)</label>
+                        <input type="number" id="movieDurationMinutes" th:field="*{movieDurationMinutes}" class="form-control"
+                               min="1" placeholder="120" required>
+                        <span th:if="${#fields.hasErrors('movieDurationMinutes')}" th:errors="*{movieDurationMinutes}" class="form-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="hall">Cinema Hall</label>
+                        <input type="text" id="hall" th:field="*{hall}" class="form-control"
+                               placeholder="e.g. IMAX, Hall 1, VIP" required>
+                        <span th:if="${#fields.hasErrors('hall')}" th:errors="*{hall}" class="form-error"></span>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="form-group">
+                        <label class="form-label" for="startsAt">Date &amp; Time</label>
+                        <input type="datetime-local" id="startsAt" th:field="*{startsAt}" class="form-control" required>
+                        <span th:if="${#fields.hasErrors('startsAt')}" th:errors="*{startsAt}" class="form-error"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="ticketPrice">Ticket Price (UAH)</label>
+                        <input type="number" step="0.50" id="ticketPrice" th:field="*{ticketPrice}" class="form-control"
+                               min="0" placeholder="180.00" required>
+                        <span th:if="${#fields.hasErrors('ticketPrice')}" th:errors="*{ticketPrice}" class="form-error"></span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 16px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 2;"
+                            th:text="${isNew ? 'Create Screening' : 'Save Changes'}">
+                        Submit
+                    </button>
+                    <a th:href="@{/admin/screenings}" class="btn btn-secondary" style="flex: 1;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

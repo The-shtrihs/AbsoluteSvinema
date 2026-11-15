@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(title='Edit Ticket #' + ${ticket.id} + ' — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>Edit Ticket</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container" style="max-width: 540px;">
+        <div style="margin-bottom: 24px;">
+            <a th:href="@{/admin/tickets}" class="btn btn-secondary btn-sm">← Back to Admin Tickets</a>
+        </div>
+
+        <div class="glass-panel" style="padding: 40px 32px;">
+            <div style="margin-bottom: 24px;">
+                <span class="badge badge-imax" style="margin-bottom: 8px;">Ticket Editor</span>
+                <h1 class="page-title" style="font-size: 1.8rem;">
+                    Edit Ticket <span th:text="${'#' + ticket.id}"></span>
+                </h1>
+                <p class="page-subtitle" style="font-size: 0.9rem;">
+                    Screening: <strong th:text="${screening.movieTitle}"></strong> (<span th:text="${screening.hall}"></span>)<br>
+                    Seat: Row <span th:text="${seat.rowNumber}"></span>, Seat <span th:text="${seat.seatNumber}"></span>
+                </p>
+            </div>
+
+            <!-- Server-side Form Validation Demonstration -->
+            <form th:action="@{/admin/tickets/{id}/edit(id=${ticket.id})}" th:object="${ticketForm}" method="post">
+                <div class="form-group">
+                    <label class="form-label" for="customerName">Customer Name</label>
+                    <input type="text" id="customerName" th:field="*{customerName}" class="form-control"
+                           placeholder="Enter customer name" required autofocus>
+                    <span th:if="${#fields.hasErrors('customerName')}" th:errors="*{customerName}" class="form-error"></span>
+                </div>
+
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">Save Customer Name</button>
+                    <a th:href="@{/admin/tickets}" class="btn btn-secondary" style="flex: 1;">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
