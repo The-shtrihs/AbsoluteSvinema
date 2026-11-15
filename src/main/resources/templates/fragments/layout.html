@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${title ?: 'AbsoluteSvinema'}">AbsoluteSvinema</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+
+<header th:fragment="navbar" class="navbar">
+    <div class="container nav-content">
+        <a th:href="@{/}" class="brand-logo">
+            <span class="brand-icon">🎬</span>
+            <span class="brand-gradient">AbsoluteSvinema</span>
+        </a>
+        <nav>
+            <ul class="nav-links">
+                <li><a th:href="@{/}">Home</a></li>
+                <li><a th:href="@{/screenings}">Screenings</a></li>
+                <li th:if="${#authorization != null and #authorization.expression('hasRole(''ADMIN'')')}">
+                    <a th:href="@{/admin/screenings}">Admin Screenings</a>
+                </li>
+                <li th:if="${#authorization != null and #authorization.expression('hasRole(''ADMIN'')')}">
+                    <a th:href="@{/admin/tickets}">Admin Tickets</a>
+                </li>
+                <li th:if="${#authorization != null and #authorization.expression('isAuthenticated()')}">
+                    <a th:href="@{/tickets/my}">My Tickets</a>
+                </li>
+            </ul>
+        </nav>
+        <div class="user-menu">
+            <!-- For anonymous users -->
+            <th:block th:if="${#authorization == null or !#authorization.expression('isAuthenticated()')}">
+                <!-- If Spring Security is not active or user is not logged in -->
+                <a th:href="@{/screenings}" class="btn btn-primary btn-sm nav-btn-highlight">Browse Movies</a>
+            </th:block>
+        </div>
+    </div>
+</header>
+
+<footer th:fragment="footer" class="footer">
+    <div class="container">
+        <p>© 2026 <strong>AbsoluteSvinema</strong>. Educational Cinema Booking System.</p>
+        <p style="margin-top: 6px; font-size: 0.8rem; color: var(--text-dim);">
+            Powered by Spring Boot 4 &amp; Thymeleaf • Interactive Antigravity Canvas
+        </p>
+    </div>
+    <canvas id="antigravity-canvas"></canvas>
+    <script th:src="@{/js/antigravity.js}"></script>
+</footer>
+
+</body>
+</html>

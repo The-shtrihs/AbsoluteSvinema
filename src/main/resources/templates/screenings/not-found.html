@@ -1,6 +1,29 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>Not found</title></head>
+<head th:replace="~{fragments/layout :: head(title='404 Not Found — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>Not found</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
 <body>
-<a th:href="@{/}">Home</a><h1>Screening or seat not found.</h1><a th:href="@{/screenings}">All screenings</a></body>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container" style="text-align: center; padding-top: 60px;">
+        <div class="glass-panel" style="max-width: 600px; margin: 0 auto; padding: 48px 32px;">
+            <div style="font-size: 3.5rem; margin-bottom: 16px;">🔭</div>
+            <h1 style="font-size: 2rem; font-weight: 800; margin-bottom: 12px;">Screening or seat not found.</h1>
+            <p style="color: var(--text-muted); margin-bottom: 28px;">
+                The screening session or seat you requested does not exist or has been removed from our system.
+            </p>
+            <div style="display: flex; justify-content: center; gap: 14px;">
+                <a th:href="@{/}" class="btn btn-secondary">Home</a>
+                <a th:href="@{/screenings}" class="btn btn-primary">All screenings</a>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
 </html>

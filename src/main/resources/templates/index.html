@@ -1,17 +1,58 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/layout :: head(title='AbsoluteSvinema — Next-Gen Cinema Experience')}">
     <meta charset="UTF-8">
     <title>AbsoluteSvinema — Home</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
 </head>
 <body>
-<header>
+<header th:replace="~{fragments/layout :: navbar}">
     <h1>AbsoluteSvinema</h1>
-</header>
-<main>
-    <h2>Welcome to our cinema!</h2>
-    <p>Browse screenings, choose a movie, and book available seats.</p>
     <a th:href="@{/screenings}">View screenings</a>
+</header>
+
+<main>
+    <div class="container">
+        <section class="hero-section">
+            <div class="hero-pill">
+                <span>✨</span> The Ultimate Cinema Booking Experience
+            </div>
+            <h1 class="hero-title">
+                Cinema Beyond <span class="brand-gradient">Gravity</span>
+            </h1>
+            <p class="hero-desc">
+                Welcome to our cinema! Browse screenings, choose your favorite movie, and book available seats with zero friction.
+            </p>
+            <div class="hero-actions">
+                <a th:href="@{/screenings}" class="btn btn-primary">
+                    View screenings
+                </a>
+                <a th:href="@{/screenings}" class="btn btn-secondary">
+                    Explore Schedule
+                </a>
+            </div>
+        </section>
+
+        <section class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎟️</div>
+                <h3 class="feature-title">Real-Time Seating</h3>
+                <p class="feature-desc">Visual 3 × 5 hall layout with instant seat availability and double-booking prevention.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Server-Side Speed</h3>
+                <p class="feature-desc">High-performance server-rendered HTML powered by Spring Boot and Thymeleaf template engine.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <h3 class="feature-title">XSS Fortified</h3>
+                <p class="feature-desc">Strict HTML character escaping ensures all dynamic user inputs are completely secure.</p>
+            </div>
+        </section>
+    </div>
 </main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

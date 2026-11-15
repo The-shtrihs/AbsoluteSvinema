@@ -1,18 +1,84 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title>AbsoluteSvinema — Screenings</title></head>
+<head th:replace="~{fragments/layout :: head(title='Screenings — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title>AbsoluteSvinema — Screenings</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
 <body>
-<a th:href="@{/}">Home</a>
-<h1>Screenings</h1>
-<p th:if="${screenings.isEmpty()}">No screenings are available yet.</p>
-<ul>
-    <li th:each="screening : ${screenings}">
-        <a th:href="@{/screenings/{id}(id=${screening.id})}" th:text="${screening.movieTitle}"></a>
-        <span th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></span>,
-        <span th:text="${screening.hall}"></span>,
-        <span th:text="${screening.ticketPrice}"></span> UAH,
-        <span th:text="${screening.movieDurationMinutes}"></span> min
-    </li>
-</ul>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+            <div>
+                <a th:href="@{/}" class="btn btn-secondary btn-sm" style="margin-bottom: 12px;">← Home</a>
+                <h1 class="page-title">Screenings</h1>
+                <p class="page-subtitle">Explore upcoming films, select your screening, and reserve the best seats in the hall.</p>
+            </div>
+        </div>
+
+        <!-- Conditional: th:if empty state -->
+        <div th:if="${screenings.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
+            <p style="font-size: 1.2rem; color: var(--text-muted);">No screenings are available yet.</p>
+        </div>
+
+        <!-- Conditional: th:unless empty state -->
+        <div th:unless="${screenings.isEmpty()}" class="screenings-grid">
+            <article th:each="screening : ${screenings}" class="screening-card">
+                <div class="card-top">
+                    <div class="card-badges">
+                        <!-- Demonstrating th:switch and th:case for screening runtime category -->
+                        <div th:switch="${screening.movieDurationMinutes > 150 ? 'epic' : (screening.movieDurationMinutes > 100 ? 'feature' : 'short')}">
+                            <span th:case="'epic'" class="badge badge-epic">Epic Feature</span>
+                            <span th:case="'feature'" class="badge badge-feature">Feature Film</span>
+                            <span th:case="'short'" class="badge badge-short">Short Feature</span>
+                        </div>
+                        <!-- Demonstrating th:switch for hall badge -->
+                        <div th:switch="${screening.hall}">
+                            <span th:case="'IMAX'" class="badge badge-imax">IMAX</span>
+                            <span th:case="'VIP'" class="badge badge-vip">VIP Lounge</span>
+                            <span th:case="*" class="badge badge-standard" th:text="${screening.hall}">Hall</span>
+                        </div>
+                    </div>
+
+                    <h2 class="card-title">
+                        <a th:href="@{/screenings/{id}(id=${screening.id})}" th:text="${screening.movieTitle}"></a>
+                    </h2>
+
+                    <!-- Demonstrating Elvis operator ?: -->
+                    <p class="card-desc" th:text="${screening.movieDescription ?: 'No synopsis available for this screening.'}"></p>
+
+                    <div class="card-meta-list">
+                        <div class="card-meta-item">
+                            <span class="meta-label">Date &amp; Time</span>
+                            <span class="meta-value" th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Hall</span>
+                            <span class="meta-value" th:text="${screening.hall}"></span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Price</span>
+                            <span class="meta-value"><span th:text="${screening.ticketPrice}"></span> UAH</span>
+                        </div>
+                        <div class="card-meta-item">
+                            <span class="meta-label">Duration</span>
+                            <span class="meta-value"><span th:text="${screening.movieDurationMinutes}"></span> min</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-bottom">
+                    <a th:href="@{/screenings/{id}(id=${screening.id})}" class="btn btn-primary btn-block">
+                        Select Seats →
+                    </a>
+                </div>
+            </article>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>

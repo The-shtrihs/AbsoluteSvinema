@@ -1,29 +1,124 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head><meta charset="UTF-8"><title th:text="${screening.movieTitle}"></title></head>
+<head th:replace="~{fragments/layout :: head(title=${screening.movieTitle} + ' — AbsoluteSvinema')}">
+    <meta charset="UTF-8">
+    <title th:text="${screening.movieTitle}"></title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
 <body>
-<a th:href="@{/}">Home</a>
-<a th:href="@{/screenings}">All screenings</a>
-<h1 th:text="${screening.movieTitle}"></h1>
-<p th:text="${screening.movieDescription}"></p>
-<p>Duration: <span th:text="${screening.movieDurationMinutes}"></span> min</p>
-<p>Starts at: <span th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></span></p>
-<p>Hall: <span th:text="${screening.hall}"></span></p>
-<p>Ticket price: <span th:text="${screening.ticketPrice}"></span> UAH</p>
-<p th:if="${message}" th:text="${message}" role="status"></p>
-<p th:if="${error}" th:text="${error}" role="alert"></p>
-<h2>Seats</h2>
-<ul>
-    <li th:each="seat : ${seats}">
-        Row <span th:text="${seat.rowNumber}"></span>, seat <span th:text="${seat.seatNumber}"></span>
-        <span th:text="${bookedSeatIds.contains(seat.id) ? 'Booked' : 'Available'}"></span>
-        <form th:if="${!bookedSeatIds.contains(seat.id)}"
-              th:action="@{/screenings/{id}/book(id=${screening.id})}" method="post">
-            <input type="hidden" name="seatId" th:value="${seat.id}">
-            <label>Customer name <input type="text" name="customerName" required></label>
-            <button type="submit">Book seat</button>
-        </form>
-    </li>
-</ul>
+<header th:replace="~{fragments/layout :: navbar}"></header>
+
+<main>
+    <div class="container">
+        <!-- Breadcrumb navigation -->
+        <div style="display: flex; gap: 12px; margin-bottom: 24px; align-items: center;">
+            <a th:href="@{/}" class="btn btn-secondary btn-sm">Home</a>
+            <span style="color: var(--text-dim);">/</span>
+            <a th:href="@{/screenings}" class="btn btn-secondary btn-sm">All screenings</a>
+        </div>
+
+        <!-- Flash messages -->
+        <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
+        <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
+
+        <!-- Screening Info Card -->
+        <div class="glass-panel screening-detail-hero">
+            <div class="detail-header-card">
+                <div>
+                    <!-- Demonstrating th:switch for hall badge -->
+                    <div th:switch="${screening.hall}" style="margin-bottom: 12px;">
+                        <span th:case="'IMAX'" class="badge badge-imax">IMAX Experience</span>
+                        <span th:case="'VIP'" class="badge badge-vip">VIP Hall</span>
+                        <span th:case="*" class="badge badge-standard" th:text="${screening.hall}">Standard Hall</span>
+                    </div>
+
+                    <h1 class="page-title" th:text="${screening.movieTitle}"></h1>
+
+                    <!-- Demonstrating Elvis operator ?: and XSS-safe th:text -->
+                    <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 20px;"
+                       th:text="${screening.movieDescription ?: 'No synopsis available for this movie.'}"></p>
+
+                    <div class="detail-chips">
+                        <div class="detail-chip">
+                            <span>⏱️</span> Duration: <strong th:text="${screening.movieDurationMinutes}"></strong> min
+                        </div>
+                        <div class="detail-chip">
+                            <span>📅</span> Starts at: <strong th:text="${#temporals.format(screening.startsAt, 'dd.MM.yyyy HH:mm')}"></strong>
+                        </div>
+                        <div class="detail-chip">
+                            <span>🏛️</span> Hall: <strong th:text="${screening.hall}"></strong>
+                        </div>
+                        <div class="detail-chip">
+                            <span>💰</span> Ticket price: <strong th:text="${screening.ticketPrice}"></strong> UAH
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cinema Seating Section -->
+        <section class="glass-panel cinema-hall-container">
+            <h2 style="font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 10px;">
+                Seats Selection
+            </h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px;">
+                Choose an available seat and enter your customer name to complete the reservation.
+            </p>
+
+            <!-- Screen Curve Visual -->
+            <div class="cinema-screen-wrap">
+                <div class="cinema-screen"></div>
+                <div class="cinema-screen-text">Cinema Screen</div>
+            </div>
+
+            <!-- Legend -->
+            <div class="seating-legend">
+                <div class="legend-item">
+                    <span class="legend-swatch available"></span>
+                    <span>Available</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-swatch booked"></span>
+                    <span>Booked</span>
+                </div>
+            </div>
+
+            <!-- Visual Seating Layout (3 Rows x 5 Seats = 15 Seats) -->
+            <div class="seat-grid-table">
+                <!-- Outer seat iteration using th:each -->
+                <div class="seat-row" style="flex-wrap: wrap;">
+                    <div th:each="seat : ${seats}"
+                         th:class="${'seat-card ' + (bookedSeatIds.contains(seat.id) ? 'seat-state-booked' : 'seat-state-available')}">
+                        <div class="seat-num">
+                            Row <span th:text="${seat.rowNumber}"></span>, seat <span th:text="${seat.seatNumber}"></span>
+                        </div>
+
+                        <!-- Demonstrating th:switch & th:case for seat status -->
+                        <span th:switch="${bookedSeatIds.contains(seat.id)}">
+                            <span th:case="true" class="status-tag status-booked">Booked</span>
+                            <span th:case="false" class="status-tag status-available">Available</span>
+                        </span>
+
+                        <!-- Demonstrating th:unless on booking form -->
+                        <form th:unless="${bookedSeatIds.contains(seat.id)}"
+                              th:action="@{/screenings/{id}/book(id=${screening.id})}" method="post"
+                              class="seat-inline-form">
+                            <input type="hidden" name="seatId" th:value="${seat.id}">
+                            <label style="font-size: 0.72rem; color: var(--text-dim); text-align: left; display: block;">
+                                Customer name
+                                <input type="text" name="customerName" placeholder="Your name" required autocomplete="off">
+                            </label>
+                            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%; padding: 5px 8px; font-size: 0.75rem;">
+                                Book seat
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
 </body>
 </html>
