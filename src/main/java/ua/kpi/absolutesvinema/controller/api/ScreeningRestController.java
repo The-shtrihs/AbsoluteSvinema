@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import ua.kpi.absolutesvinema.dto.api.PageResponse;
 import ua.kpi.absolutesvinema.dto.api.ScreeningRequest;
 import ua.kpi.absolutesvinema.dto.api.ScreeningResponse;
 import ua.kpi.absolutesvinema.model.Screening;
@@ -24,10 +25,30 @@ public class ScreeningRestController {
     }
 
     @GetMapping
-    public List<ScreeningResponse> list() {
-        return screeningService.findAll().stream()
+    public PageResponse<ScreeningResponse> list(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String hall,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        if (page < 0) {
+            throw new IllegalArgumentException("Page index must be non-negative");
+        }
+        if (size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page size must be between 1 and 100");
+        }
+
+        List<Screening> filtered = screeningService.findFiltered(title, hall);
+        long totalElements = filtered.size();
+        int totalPages = size == 0 || totalElements == 0 ? 0 : (int) Math.ceil((double) totalElements / size);
+
+        List<ScreeningResponse> content = filtered.stream()
+                .skip((long) page * size)
+                .limit(size)
                 .map(ScreeningResponse::from)
                 .toList();
+
+        return new PageResponse<>(content, page, size, totalElements, totalPages);
     }
 
     @GetMapping("/{id}")

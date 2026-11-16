@@ -48,7 +48,7 @@ class ScreeningRestControllerTest {
     }
 
     @Test
-    void listScreeningsIsPublicAndReturnsJsonArray() throws Exception {
+    void listScreeningsIsPublicAndReturnsPagedResponse() throws Exception {
         Screening sample = screeningService.create(
                 "Public Film " + System.currentTimeMillis(),
                 "Description",
@@ -58,11 +58,132 @@ class ScreeningRestControllerTest {
                 new BigDecimal("180.00")
         );
 
-        mockMvc.perform(get("/api/screenings"))
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", sample.movieTitle()))
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", isA(List.class)))
-                .andExpect(jsonPath("$[?(@.id == " + sample.id() + ")].movieTitle").value(sample.movieTitle()));
+                .andExpect(jsonPath("$.content", isA(List.class)))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.totalPages").value(1))
+                .andExpect(jsonPath("$.content[0].movieTitle").value(sample.movieTitle()));
+    }
+
+    @Test
+    void listScreeningsFilteringByTitleAndHall() throws Exception {
+        String uniqueSuffix = "_" + System.currentTimeMillis();
+        Screening s1 = screeningService.create("Interstellar" + uniqueSuffix, "Sci-Fi", 169,
+                LocalDateTime.now().plusDays(2), "Hall 1", new BigDecimal("200.00"));
+        Screening s2 = screeningService.create("Intermission" + uniqueSuffix, "Drama", 100,
+                LocalDateTime.now().plusDays(3), "Hall 2", new BigDecimal("150.00"));
+        Screening s3 = screeningService.create("Other" + uniqueSuffix, "Action", 90,
+                LocalDateTime.now().plusDays(4), "Hall 1", new BigDecimal("120.00"));
+
+        // Title substring case-insensitive with trim
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", "  iNtEr  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + s1.id() + ")]").exists())
+                .andExpect(jsonPath("$.content[?(@.id == " + s2.id() + ")]").exists())
+                .andExpect(jsonPath("$.content[?(@.id == " + s3.id() + ")]").doesNotExist());
+
+        // Hall exact match case-insensitive with trim
+        mockMvc.perform(get("/api/screenings")
+                        .param("hall", "  hAlL 1  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + s1.id() + ")]").exists())
+                .andExpect(jsonPath("$.content[?(@.id == " + s2.id() + ")]").doesNotExist())
+                .andExpect(jsonPath("$.content[?(@.id == " + s3.id() + ")]").exists());
+
+        // Combined title and hall filter
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", "inter")
+                        .param("hall", "hall 1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.id == " + s1.id() + ")]").exists())
+                .andExpect(jsonPath("$.content[?(@.id == " + s2.id() + ")]").doesNotExist())
+                .andExpect(jsonPath("$.content[?(@.id == " + s3.id() + ")]").doesNotExist());
+    }
+
+    @Test
+    void listScreeningsStableOrderingByIdAndPaginationSlices() throws Exception {
+        String unique = "Slice_" + System.currentTimeMillis();
+        Screening s1 = screeningService.create(unique + " A", "D1", 100, LocalDateTime.now().plusDays(1), "H1", BigDecimal.TEN);
+        Screening s2 = screeningService.create(unique + " B", "D2", 100, LocalDateTime.now().plusDays(1), "H1", BigDecimal.TEN);
+        Screening s3 = screeningService.create(unique + " C", "D3", 100, LocalDateTime.now().plusDays(1), "H1", BigDecimal.TEN);
+
+        // Page 0 size 2 -> must contain s1 and s2 in ascending id order
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", unique)
+                        .param("page", "0")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(2)))
+                .andExpect(jsonPath("$.content[0].id").value(s1.id()))
+                .andExpect(jsonPath("$.content[1].id").value(s2.id()))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+
+        // Page 1 size 2 -> must contain s3
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", unique)
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].id").value(s3.id()))
+                .andExpect(jsonPath("$.page").value(1));
+
+        // Out of range page -> returns 200 with empty content and correct totals
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", unique)
+                        .param("page", "5")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.page").value(5))
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void listScreeningsZeroResultsReturns200WithEmptyContent() throws Exception {
+        mockMvc.perform(get("/api/screenings")
+                        .param("title", "NonexistentTitleXYZ123456789"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content", hasSize(0)))
+                .andExpect(jsonPath("$.totalElements").value(0))
+                .andExpect(jsonPath("$.totalPages").value(0));
+    }
+
+    @Test
+    void listScreeningsRejectsInvalidPageAndSize() throws Exception {
+        // Negative page -> 400
+        mockMvc.perform(get("/api/screenings").param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        // Size 0 -> 400
+        mockMvc.perform(get("/api/screenings").param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        // Size 101 -> 400
+        mockMvc.perform(get("/api/screenings").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.status").value(400));
+
+        // Type mismatch for page -> 400
+        mockMvc.perform(get("/api/screenings").param("page", "not-a-number"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(jsonPath("$.status").value(400));
     }
 
     @Test
