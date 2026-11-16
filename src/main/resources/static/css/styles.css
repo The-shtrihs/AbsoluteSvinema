@@ -45,7 +45,6 @@ body {
     line-height: 1.6;
 }
 
-/* Background Antigravity Canvas */
 #antigravity-canvas {
     position: fixed;
     top: 0;
@@ -56,7 +55,6 @@ body {
     pointer-events: none;
 }
 
-/* Ambient Radial Glow following cursor */
 .ambient-glow {
     position: fixed;
     top: 0;
@@ -71,7 +69,6 @@ body {
     transition: width 0.3s ease, height 0.3s ease;
 }
 
-/* Container */
 .container {
     width: 100%;
     max-width: 1200px;
@@ -81,7 +78,6 @@ body {
     z-index: 1;
 }
 
-/* Navigation Bar */
 .navbar {
     position: sticky;
     top: 0;
@@ -168,7 +164,6 @@ body {
     color: #ffffff;
 }
 
-/* User Profile Badge in Nav */
 .user-menu {
     display: flex;
     align-items: center;
@@ -197,13 +192,11 @@ body {
     color: #ffffff;
 }
 
-/* Main Layout */
 main {
     flex: 1;
     padding: 40px 0 60px;
 }
 
-/* Typography & Titles */
 .page-header {
     margin-bottom: 36px;
 }
@@ -224,7 +217,6 @@ main {
     max-width: 680px;
 }
 
-/* Cards & Glassmorphism */
 .glass-panel {
     background: var(--bg-card);
     backdrop-filter: blur(16px);
@@ -242,7 +234,6 @@ main {
     border-color: rgba(255, 255, 255, 0.15);
 }
 
-/* Hero Section */
 .hero-section {
     text-align: center;
     padding: 60px 20px;
@@ -286,7 +277,6 @@ main {
     flex-wrap: wrap;
 }
 
-/* Feature grid */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -326,7 +316,6 @@ main {
     font-size: 0.95rem;
 }
 
-/* Screenings Grid */
 .screenings-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -436,7 +425,6 @@ main {
     font-weight: 600;
 }
 
-/* Badges */
 .badge {
     display: inline-flex;
     align-items: center;
@@ -485,7 +473,6 @@ main {
     color: var(--accent-emerald);
 }
 
-/* Buttons */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -547,7 +534,6 @@ main {
     width: 100%;
 }
 
-/* Cinema Screening Details Page */
 .screening-detail-hero {
     margin-bottom: 36px;
 }
@@ -581,7 +567,6 @@ main {
     color: var(--text-main);
 }
 
-/* Cinema Seating Visualizer */
 .cinema-hall-container {
     margin-top: 32px;
 }
@@ -643,7 +628,6 @@ main {
     border: 1px solid var(--accent-rose);
 }
 
-/* Seating Grid (Rows x Seats) */
 .seat-grid-table {
     display: flex;
     flex-direction: column;
@@ -722,7 +706,6 @@ main {
     color: var(--accent-rose);
 }
 
-/* Forms */
 .form-group {
     margin-bottom: 20px;
 }
@@ -785,7 +768,6 @@ main {
     border-color: var(--accent-cyan);
 }
 
-/* Alerts */
 .alert {
     padding: 16px 20px;
     border-radius: var(--radius-md);
@@ -808,7 +790,6 @@ main {
     color: #f87171;
 }
 
-/* Admin Table */
 .data-table-wrap {
     overflow-x: auto;
     border-radius: var(--radius-md);
@@ -853,7 +834,6 @@ main {
     align-items: center;
 }
 
-/* Footer */
 .footer {
     border-top: 1px solid var(--border-color);
     padding: 30px 0;
@@ -872,7 +852,6 @@ main {
     color: var(--accent-cyan);
 }
 
-/* Responsive adjustments */
 @media (min-width: 769px) {
     .seat-row {
         display: grid;

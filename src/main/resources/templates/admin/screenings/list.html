@@ -22,13 +22,11 @@
         <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
         <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
 
-        <!-- Conditional formatting: th:if when empty -->
         <div th:if="${screenings.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
             <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 16px;">No screenings currently available in database.</p>
             <a th:href="@{/admin/screenings/new}" class="btn btn-primary">Create the first screening</a>
         </div>
 
-        <!-- Conditional formatting: th:unless when not empty -->
         <div th:unless="${screenings.isEmpty()}" class="glass-panel" style="padding: 0; overflow: hidden;">
             <div class="data-table-wrap">
                 <table class="data-table">
@@ -44,7 +42,6 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <!-- Iteration using th:each -->
                     <tr th:each="screening : ${screenings}">
                         <td><code style="color: var(--accent-cyan);" th:text="${'#' + screening.id}"></code></td>
                         <td>
@@ -53,7 +50,6 @@
                                  th:text="${screening.movieDescription ?: 'No description'}"></div>
                         </td>
                         <td>
-                            <!-- Demonstrating th:switch in table -->
                             <span th:switch="${screening.hall}">
                                 <span th:case="'IMAX'" class="badge badge-imax">IMAX</span>
                                 <span th:case="'VIP'" class="badge badge-vip">VIP</span>

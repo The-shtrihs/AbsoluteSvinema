@@ -73,14 +73,12 @@ class UserTicketBookingTest {
 
         Seat seat = screeningService.findSeats(screening.id()).getFirst();
 
-        // Book seat as logged in user
         mockMvc.perform(post("/screenings/" + screening.id() + "/book").with(csrf())
                         .param("seatId", seat.id().toString())
                         .param("customerName", "Danylo Marchenko"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/screenings/" + screening.id()));
 
-        // Check ticket is linked to user
         var userTickets = ticketService.findUserTicketsWithDetails(user.id());
         assertThat(userTickets).hasSizeGreaterThanOrEqualTo(1);
         var bookedTicket = userTickets.stream()
@@ -89,19 +87,16 @@ class UserTicketBookingTest {
                 .orElseThrow();
         assertThat(bookedTicket.ticket().userId()).isEqualTo(user.id());
 
-        // Check /tickets/my displays the booked ticket
         mockMvc.perform(get("/tickets/my"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Dune: Part Two")))
                 .andExpect(content().string(containsString("Row <span>" + seat.rowNumber() + "</span>")))
                 .andExpect(content().string(containsString("250.00")));
 
-        // Cancel the ticket
         mockMvc.perform(post("/tickets/" + bookedTicket.ticket().id() + "/cancel").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/tickets/my"));
 
-        // Verify seat is available again
         assertThat(ticketService.isSeatBooked(seat.id())).isFalse();
     }
     @Test

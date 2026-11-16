@@ -47,13 +47,11 @@ class ThymeleafViewTest {
                 new BigDecimal("220.00")
         );
 
-        // Verify screenings list escapes the script tag
         mockMvc.perform(get("/screenings"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("&lt;script&gt;alert(&#39;xss-attack&#39;)&lt;/script&gt;")))
                 .andExpect(content().string(not(containsString(xssPayload))));
 
-        // Verify screening details escapes the script tag
         mockMvc.perform(get("/screenings/" + xssScreening.id()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("&lt;script&gt;alert(&#39;xss-attack&#39;)&lt;/script&gt;")))
@@ -65,7 +63,7 @@ class ThymeleafViewTest {
         Screening screening = screeningService.create(
                 "Construct Showcase",
                 "Testing Elvis and Switch constructs",
-                180, // > 150 min (epic switch case)
+                180,
                 LocalDateTime.now().plusDays(3),
                 "VIP",
                 new BigDecimal("300.00")

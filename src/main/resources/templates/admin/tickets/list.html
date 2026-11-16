@@ -22,12 +22,10 @@
         <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
         <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
 
-        <!-- Conditional formatting: th:if when empty -->
         <div th:if="${tickets.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
             <p style="color: var(--text-muted); font-size: 1.1rem;">No tickets booked in the system yet.</p>
         </div>
 
-        <!-- Conditional formatting: th:unless when not empty -->
         <div th:unless="${tickets.isEmpty()}" class="glass-panel" style="padding: 0; overflow: hidden;">
             <div class="data-table-wrap">
                 <table class="data-table">
@@ -43,11 +41,9 @@
                     </tr>
                     </thead>
                     <tbody>
-                    <!-- Iteration using th:each -->
                     <tr th:each="td : ${tickets}">
                         <td><code style="color: var(--accent-cyan);" th:text="${'#' + td.ticket.id}"></code></td>
                         <td>
-                            <!-- Demonstrating Elvis operator ?: and XSS-safe text -->
                             <strong th:text="${td.ticket.customerName ?: 'Anonymous Guest'}"></strong>
                         </td>
                         <td>

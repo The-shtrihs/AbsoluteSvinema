@@ -10,22 +10,18 @@
 
 <main>
     <div class="container">
-        <!-- Breadcrumb navigation -->
         <div style="display: flex; gap: 12px; margin-bottom: 24px; align-items: center;">
             <a th:href="@{/}" class="btn btn-secondary btn-sm">Home</a>
             <span style="color: var(--text-dim);">/</span>
             <a th:href="@{/screenings}" class="btn btn-secondary btn-sm">All screenings</a>
         </div>
 
-        <!-- Flash messages -->
         <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
         <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
 
-        <!-- Screening Info Card -->
         <div class="glass-panel screening-detail-hero">
             <div class="detail-header-card">
                 <div>
-                    <!-- Demonstrating th:switch for hall badge -->
                     <div th:switch="${screening.hall}" style="margin-bottom: 12px;">
                         <span th:case="'IMAX'" class="badge badge-imax">IMAX Experience</span>
                         <span th:case="'VIP'" class="badge badge-vip">VIP Hall</span>
@@ -34,7 +30,6 @@
 
                     <h1 class="page-title" th:text="${screening.movieTitle}"></h1>
 
-                    <!-- Demonstrating Elvis operator ?: and XSS-safe th:text -->
                     <p style="color: var(--text-muted); font-size: 1.05rem; margin-bottom: 20px;"
                        th:text="${screening.movieDescription ?: 'No synopsis available for this movie.'}"></p>
 
@@ -56,7 +51,6 @@
             </div>
         </div>
 
-        <!-- Cinema Seating Section -->
         <section class="glass-panel cinema-hall-container">
             <h2 style="font-size: 1.6rem; font-weight: 800; text-align: center; margin-bottom: 10px;">
                 Seats Selection
@@ -65,13 +59,11 @@
                 Choose an available seat and enter your customer name to complete the reservation.
             </p>
 
-            <!-- Screen Curve Visual -->
             <div class="cinema-screen-wrap">
                 <div class="cinema-screen"></div>
                 <div class="cinema-screen-text">Cinema Screen</div>
             </div>
 
-            <!-- Legend -->
             <div class="seating-legend">
                 <div class="legend-item">
                     <span class="legend-swatch available"></span>
@@ -83,9 +75,7 @@
                 </div>
             </div>
 
-            <!-- Visual Seating Layout (3 Rows x 5 Seats = 15 Seats) -->
             <div class="seat-grid-table">
-                <!-- Outer seat iteration using th:each -->
                 <div class="seat-row" style="flex-wrap: wrap;">
                     <div th:each="seat : ${seats}"
                          th:class="${'seat-card ' + (bookedSeatIds.contains(seat.id) ? 'seat-state-booked' : 'seat-state-available')}">
@@ -93,13 +83,11 @@
                             Row <span th:text="${seat.rowNumber}"></span>, seat <span th:text="${seat.seatNumber}"></span>
                         </div>
 
-                        <!-- Demonstrating th:switch & th:case for seat status -->
                         <span th:switch="${bookedSeatIds.contains(seat.id)}">
                             <span th:case="true" class="status-tag status-booked">Booked</span>
                             <span th:case="false" class="status-tag status-available">Available</span>
                         </span>
 
-                        <!-- Demonstrating th:unless on booking form -->
                         <form th:unless="${bookedSeatIds.contains(seat.id)}"
                               th:action="@{/screenings/{id}/book(id=${screening.id})}" method="post"
                               class="seat-inline-form">

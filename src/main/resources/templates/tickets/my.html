@@ -23,11 +23,9 @@
             <a th:href="@{/screenings}" class="btn btn-primary">Book Another Seat +</a>
         </div>
 
-        <!-- Flash alerts -->
         <div th:if="${message}" th:text="${message}" role="status" class="alert alert-success"></div>
         <div th:if="${error}" th:text="${error}" role="alert" class="alert alert-danger"></div>
 
-        <!-- Conditional formatting: th:if when no tickets exist -->
         <div th:if="${tickets.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
             <div style="font-size: 3rem; margin-bottom: 14px;">🎟️</div>
             <h2 style="font-size: 1.5rem; margin-bottom: 8px;">No tickets booked yet</h2>
@@ -35,7 +33,6 @@
             <a th:href="@{/screenings}" class="btn btn-primary">Explore Screenings</a>
         </div>
 
-        <!-- Conditional formatting: th:unless when tickets exist -->
         <div th:unless="${tickets.isEmpty()}" class="screenings-grid">
             <article th:each="td : ${tickets}" class="screening-card" style="border-left: 4px solid var(--accent-emerald);">
                 <div class="card-top">
@@ -46,7 +43,6 @@
 
                     <h2 class="card-title" th:text="${td.screening.movieTitle}"></h2>
 
-                    <!-- Elvis operator demonstration -->
                     <p class="card-desc" th:text="${td.screening.movieDescription ?: 'No synopsis available'}"></p>
 
                     <div class="card-meta-list">

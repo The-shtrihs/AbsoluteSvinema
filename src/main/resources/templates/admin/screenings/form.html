@@ -23,7 +23,6 @@
                 <p class="page-subtitle" th:text="${isNew ? 'Fill in the screening details. 15 seats (3 × 5) will be generated automatically.' : 'Update screening attributes. Seat numbers and booked tickets remain linked.'}"></p>
             </div>
 
-            <!-- Server-side Form Validation Demonstration -->
             <form th:action="${isNew ? '/admin/screenings' : '/admin/screenings/' + screeningId + '/edit'}"
                   th:object="${screeningForm}" method="post">
 

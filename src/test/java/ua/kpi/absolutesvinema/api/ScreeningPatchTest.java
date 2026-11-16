@@ -55,7 +55,6 @@ class ScreeningPatchTest {
         );
     }
 
-    // ── JSON Patch (RFC 6902) ─────────────────────────────────────────────────
 
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
@@ -96,7 +95,6 @@ class ScreeningPatchTest {
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
     void jsonPatch_copy_operation_returns200() throws Exception {
-        // Copy movieTitle value to movieDescription
         String patch = """
                 [{"op":"copy","from":"/movieTitle","path":"/movieDescription"}]
                 """;
@@ -163,7 +161,6 @@ class ScreeningPatchTest {
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
     void jsonPatch_move_requiredField_returns400() throws Exception {
-        // Move removes from source -> movieTitle becomes missing/null
         String patch = """
                 [{"op":"move","from":"/movieTitle","path":"/movieDescription"}]
                 """;
@@ -287,7 +284,6 @@ class ScreeningPatchTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    // ── JSON Merge Patch (RFC 7396) ───────────────────────────────────────────
 
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
@@ -310,7 +306,6 @@ class ScreeningPatchTest {
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
     void mergePatch_nullRemoval_failsValidation_returns400() throws Exception {
-        // RFC 7396: null removes property -> movieTitle becomes null -> fails @NotBlank
         String patch = """
                 {"movieTitle": null}
                 """;
@@ -418,7 +413,6 @@ class ScreeningPatchTest {
                 .andExpect(jsonPath("$.status").value(404));
     }
 
-    // ── Atomicity / Unchanged State on Failure ─────────────────────────────────
 
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")
@@ -426,7 +420,6 @@ class ScreeningPatchTest {
         String originalTitle = screening.movieTitle();
         Integer originalDuration = screening.movieDurationMinutes();
 
-        // Patch contains invalid duration after valid title change -> must reject and not apply
         String patch = String.format("""
                 [
                   {"op":"replace","path":"/movieTitle","value":"New Title"},
@@ -445,7 +438,6 @@ class ScreeningPatchTest {
         assertThat(reloaded.movieDurationMinutes()).isEqualTo(originalDuration);
     }
 
-    // ── Authorization & CSRF ──────────────────────────────────────────────────
 
     @Test
     void jsonPatch_anonymous_withCsrf_returns401() throws Exception {
@@ -504,7 +496,6 @@ class ScreeningPatchTest {
                 .andExpect(content().contentTypeCompatibleWith(PROBLEM));
     }
 
-    // ── Unsupported Content-Type ──────────────────────────────────────────────
 
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = "ADMIN")

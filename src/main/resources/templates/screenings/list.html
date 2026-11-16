@@ -18,23 +18,19 @@
             </div>
         </div>
 
-        <!-- Conditional: th:if empty state -->
         <div th:if="${screenings.isEmpty()}" class="glass-panel" style="text-align: center; padding: 48px;">
             <p style="font-size: 1.2rem; color: var(--text-muted);">No screenings are available yet.</p>
         </div>
 
-        <!-- Conditional: th:unless empty state -->
         <div th:unless="${screenings.isEmpty()}" class="screenings-grid">
             <article th:each="screening : ${screenings}" class="screening-card">
                 <div class="card-top">
                     <div class="card-badges">
-                        <!-- Demonstrating th:switch and th:case for screening runtime category -->
                         <div th:switch="${screening.movieDurationMinutes > 150 ? 'epic' : (screening.movieDurationMinutes > 100 ? 'feature' : 'short')}">
                             <span th:case="'epic'" class="badge badge-epic">Epic Feature</span>
                             <span th:case="'feature'" class="badge badge-feature">Feature Film</span>
                             <span th:case="'short'" class="badge badge-short">Short Feature</span>
                         </div>
-                        <!-- Demonstrating th:switch for hall badge -->
                         <div th:switch="${screening.hall}">
                             <span th:case="'IMAX'" class="badge badge-imax">IMAX</span>
                             <span th:case="'VIP'" class="badge badge-vip">VIP Lounge</span>
@@ -46,7 +42,6 @@
                         <a th:href="@{/screenings/{id}(id=${screening.id})}" th:text="${screening.movieTitle}"></a>
                     </h2>
 
-                    <!-- Demonstrating Elvis operator ?: -->
                     <p class="card-desc" th:text="${screening.movieDescription ?: 'No synopsis available for this screening.'}"></p>
 
                     <div class="card-meta-list">

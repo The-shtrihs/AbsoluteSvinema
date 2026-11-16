@@ -55,7 +55,6 @@ class AuthenticationTest {
     void userRegistrationWorkflow() throws Exception {
         String uniqueEmail = "test_" + System.currentTimeMillis() + "@svinema.ua";
 
-        // Successful registration
         mockMvc.perform(post("/register").with(csrf())
                         .param("email", uniqueEmail)
                         .param("password", "secret123")
@@ -66,7 +65,6 @@ class AuthenticationTest {
         assertThat(userService.findByEmail(uniqueEmail)).isPresent();
         assertThat(userService.findByEmail(uniqueEmail).get().role()).isEqualTo("ROLE_USER");
 
-        // Duplicate email rejection
         mockMvc.perform(post("/register").with(csrf())
                         .param("email", uniqueEmail)
                         .param("password", "another123")
@@ -78,13 +76,11 @@ class AuthenticationTest {
 
     @Test
     void loginSuccessAndFailure() throws Exception {
-        // Successful login with seeded demo user
         mockMvc.perform(formLogin("/login").user("email", "user@svinema.ua").password("password", "user123"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/"))
                 .andExpect(authenticated().withUsername("user@svinema.ua"));
 
-        // Failed login
         mockMvc.perform(formLogin("/login").user("email", "user@svinema.ua").password("password", "wrongpassword"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?error"))

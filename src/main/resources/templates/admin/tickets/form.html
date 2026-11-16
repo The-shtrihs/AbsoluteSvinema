@@ -26,7 +26,6 @@
                 </p>
             </div>
 
-            <!-- Server-side Form Validation Demonstration -->
             <form th:action="@{/admin/tickets/{id}/edit(id=${ticket.id})}" th:object="${ticketForm}" method="post">
                 <div class="form-group">
                     <label class="form-label" for="customerName">Customer Name</label>

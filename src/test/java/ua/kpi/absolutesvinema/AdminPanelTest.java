@@ -73,17 +73,14 @@ class AdminPanelTest {
     @Test
     @WithMockUser(username = "admin@svinema.ua", roles = {"ADMIN"})
     void adminCanManageScreenings() throws Exception {
-        // List screenings
         mockMvc.perform(get("/admin/screenings"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Screenings Management")));
 
-        // New screening form
         mockMvc.perform(get("/admin/screenings/new"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Create New Screening")));
 
-        // Validation error on blank title
         mockMvc.perform(post("/admin/screenings").with(csrf())
                         .param("movieTitle", "  ")
                         .param("movieDescription", "Some desc")
@@ -95,7 +92,6 @@ class AdminPanelTest {
                 .andExpect(view().name("admin/screenings/form"))
                 .andExpect(content().string(containsString("Movie title must not be blank")));
 
-        // Create valid screening
         String uniqueTitle = "Admin Created Movie " + System.currentTimeMillis();
         mockMvc.perform(post("/admin/screenings").with(csrf())
                         .param("movieTitle", uniqueTitle)
@@ -114,12 +110,10 @@ class AdminPanelTest {
 
         assertThat(screeningService.findSeats(created.id())).hasSize(15);
 
-        // Edit form
         mockMvc.perform(get("/admin/screenings/" + created.id() + "/edit"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Edit Screening #" + created.id())));
 
-        // Update screening
         mockMvc.perform(post("/admin/screenings/" + created.id() + "/edit").with(csrf())
                         .param("movieTitle", uniqueTitle + " (Updated)")
                         .param("movieDescription", "Updated description")
@@ -132,7 +126,6 @@ class AdminPanelTest {
 
         assertThat(screeningService.findById(created.id()).movieTitle()).contains("(Updated)");
 
-        // Delete screening
         mockMvc.perform(post("/admin/screenings/" + created.id() + "/delete").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/screenings"));
@@ -154,18 +147,15 @@ class AdminPanelTest {
         Seat seat = screeningService.findSeats(screening.id()).getFirst();
         Ticket ticket = ticketService.book(seat.id(), "Original Customer");
 
-        // List tickets
         mockMvc.perform(get("/admin/tickets"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Original Customer")))
                 .andExpect(content().string(containsString("Ticket Admin Test Film")));
 
-        // Edit form
         mockMvc.perform(get("/admin/tickets/" + ticket.id() + "/edit"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Edit Ticket #" + ticket.id())));
 
-        // Update customer name
         mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/edit").with(csrf())
                         .param("customerName", "Renamed Customer"))
                 .andExpect(status().is3xxRedirection())
@@ -173,7 +163,6 @@ class AdminPanelTest {
 
         assertThat(ticketService.findById(ticket.id()).customerName()).isEqualTo("Renamed Customer");
 
-        // Cancel ticket
         mockMvc.perform(post("/admin/tickets/" + ticket.id() + "/cancel").with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/admin/tickets"));

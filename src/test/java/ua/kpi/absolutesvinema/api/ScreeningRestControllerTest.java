@@ -80,7 +80,6 @@ class ScreeningRestControllerTest {
         Screening s3 = screeningService.create("Other" + uniqueSuffix, "Action", 90,
                 LocalDateTime.now().plusDays(4), "Hall 1", new BigDecimal("120.00"));
 
-        // Title substring case-insensitive with trim
         mockMvc.perform(get("/api/screenings")
                         .param("title", "  iNtEr  "))
                 .andExpect(status().isOk())
@@ -88,7 +87,6 @@ class ScreeningRestControllerTest {
                 .andExpect(jsonPath("$.content[?(@.id == " + s2.id() + ")]").exists())
                 .andExpect(jsonPath("$.content[?(@.id == " + s3.id() + ")]").doesNotExist());
 
-        // Hall exact match case-insensitive with trim
         mockMvc.perform(get("/api/screenings")
                         .param("hall", "  hAlL 1  "))
                 .andExpect(status().isOk())
@@ -96,7 +94,6 @@ class ScreeningRestControllerTest {
                 .andExpect(jsonPath("$.content[?(@.id == " + s2.id() + ")]").doesNotExist())
                 .andExpect(jsonPath("$.content[?(@.id == " + s3.id() + ")]").exists());
 
-        // Combined title and hall filter
         mockMvc.perform(get("/api/screenings")
                         .param("title", "inter")
                         .param("hall", "hall 1"))
@@ -113,7 +110,6 @@ class ScreeningRestControllerTest {
         Screening s2 = screeningService.create(unique + " B", "D2", 100, LocalDateTime.now().plusDays(1), "H1", BigDecimal.TEN);
         Screening s3 = screeningService.create(unique + " C", "D3", 100, LocalDateTime.now().plusDays(1), "H1", BigDecimal.TEN);
 
-        // Page 0 size 2 -> must contain s1 and s2 in ascending id order
         mockMvc.perform(get("/api/screenings")
                         .param("title", unique)
                         .param("page", "0")
@@ -127,7 +123,6 @@ class ScreeningRestControllerTest {
                 .andExpect(jsonPath("$.totalElements").value(3))
                 .andExpect(jsonPath("$.totalPages").value(2));
 
-        // Page 1 size 2 -> must contain s3
         mockMvc.perform(get("/api/screenings")
                         .param("title", unique)
                         .param("page", "1")
@@ -137,7 +132,6 @@ class ScreeningRestControllerTest {
                 .andExpect(jsonPath("$.content[0].id").value(s3.id()))
                 .andExpect(jsonPath("$.page").value(1));
 
-        // Out of range page -> returns 200 with empty content and correct totals
         mockMvc.perform(get("/api/screenings")
                         .param("title", unique)
                         .param("page", "5")
@@ -161,25 +155,21 @@ class ScreeningRestControllerTest {
 
     @Test
     void listScreeningsRejectsInvalidPageAndSize() throws Exception {
-        // Negative page -> 400
         mockMvc.perform(get("/api/screenings").param("page", "-1"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.status").value(400));
 
-        // Size 0 -> 400
         mockMvc.perform(get("/api/screenings").param("size", "0"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.status").value(400));
 
-        // Size 101 -> 400
         mockMvc.perform(get("/api/screenings").param("size", "101"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.status").value(400));
 
-        // Type mismatch for page -> 400
         mockMvc.perform(get("/api/screenings").param("page", "not-a-number"))
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
@@ -241,7 +231,6 @@ class ScreeningRestControllerTest {
         String location = result.getResponse().getHeader("Location");
         Long createdId = Long.parseLong(location.substring(location.lastIndexOf('/') + 1));
 
-        // Verify that ScreeningService automatically created 15 seats
         List<Seat> seats = screeningService.findSeats(createdId);
         assertThat(seats).hasSize(15);
     }
@@ -288,13 +277,11 @@ class ScreeningRestControllerTest {
                 }
                 """;
 
-        // Anonymous without CSRF -> 403 (CSRF blocked)
         mockMvc.perform(post("/api/screenings")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isForbidden());
 
-        // Anonymous with CSRF -> 401 Unauthorized
         mockMvc.perform(post("/api/screenings")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -401,7 +388,6 @@ class ScreeningRestControllerTest {
         Long screeningId = screening.id();
         Seat firstSeat = screeningService.findSeats(screeningId).getFirst();
 
-        // Book a ticket to verify cascade deletion
         ticketService.book(firstSeat.id(), null, "Test Customer");
         assertThat(ticketService.isSeatBooked(firstSeat.id())).isTrue();
 
@@ -410,11 +396,9 @@ class ScreeningRestControllerTest {
                 .andExpect(status().isNoContent())
                 .andExpect(content().string(""));
 
-        // Subsequent GET must return 404
         mockMvc.perform(get("/api/screenings/" + screeningId))
                 .andExpect(status().isNotFound());
 
-        // Verify seats and tickets were cascaded: checking the deleted seat throws ResourceNotFoundException
         org.junit.jupiter.api.Assertions.assertThrows(
                 ua.kpi.absolutesvinema.exception.ResourceNotFoundException.class,
                 () -> ticketService.isSeatBooked(firstSeat.id())

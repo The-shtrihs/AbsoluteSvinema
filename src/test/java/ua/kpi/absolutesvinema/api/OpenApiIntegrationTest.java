@@ -40,12 +40,9 @@ class OpenApiIntegrationTest {
                 .andExpect(jsonPath("$.paths['/api/screenings']").exists())
                 .andExpect(jsonPath("$.paths['/api/screenings/{id}']").exists())
                 .andExpect(jsonPath("$.paths['/api/csrf']").exists())
-                // Verify PATCH operations are exposed under /api/screenings/{id}
                 .andExpect(jsonPath("$.paths['/api/screenings/{id}'].patch").exists())
-                // Verify MVC controllers are not in OpenAPI
                 .andExpect(jsonPath("$.paths['/screenings']").doesNotExist())
                 .andExpect(jsonPath("$.paths['/login']").doesNotExist())
-                // Verify schemas
                 .andExpect(jsonPath("$.components.schemas.ScreeningRequest").exists())
                 .andExpect(jsonPath("$.components.schemas.ScreeningResponse").exists())
                 .andExpect(jsonPath("$.components.schemas.PageResponse").exists())

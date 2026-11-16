@@ -1,13 +1,3 @@
-/**
- * AbsoluteSvinema — Antigravity Interactive Particle Canvas
- * Features:
- * - Dynamic constellation particle field
- * - Cursor gravitation & repulsion with spring damping
- * - Interactive hue shifting based on cursor movement
- * - Proximity-based dynamic glowing connection lines
- * - Click shockwave pulse
- * - Ambient spotlight glow
- */
 (function () {
     'use strict';
 
@@ -21,7 +11,6 @@
     let height = 0;
     let dpr = window.devicePixelRatio || 1;
 
-    // Mouse state
     const mouse = {
         x: -1000,
         y: -1000,
@@ -29,13 +18,11 @@
         targetY: -1000,
         radius: 160,
         isHovered: false,
-        hueShift: 185 // Base cyan hue
+        hueShift: 185
     };
 
-    // Shockwaves on click
     const shockwaves = [];
 
-    // Particle settings
     const PARTICLE_COUNT = Math.min(100, Math.floor((window.innerWidth * window.innerHeight) / 12000));
     const CONNECT_DISTANCE = 120;
     const particles = [];
@@ -56,7 +43,7 @@
             this.vx = Math.cos(angle) * speed;
             this.vy = Math.sin(angle) * speed;
 
-            this.baseHue = Math.random() > 0.6 ? 185 : (Math.random() > 0.3 ? 280 : 330); // Cyan, Purple, Pink
+            this.baseHue = Math.random() > 0.6 ? 185 : (Math.random() > 0.3 ? 280 : 330);
             this.hue = this.baseHue;
             this.alpha = Math.random() * 0.5 + 0.3;
             this.pulseSpeed = Math.random() * 0.03 + 0.01;
@@ -64,32 +51,26 @@
         }
 
         update() {
-            // Natural pulse
             this.pulsePhase += this.pulseSpeed;
             this.radius = this.baseRadius + Math.sin(this.pulsePhase) * 0.8;
 
-            // Mouse interaction (Gravitation & Repulsion)
             const dx = mouse.x - this.x;
             const dy = mouse.y - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
             if (dist < mouse.radius && mouse.isHovered) {
                 const force = (1 - dist / mouse.radius);
-                // Gentle repulsion when very close, light swirl when near
                 const angle = Math.atan2(dy, dx);
                 this.vx -= Math.cos(angle) * force * 0.5;
                 this.vy -= Math.sin(angle) * force * 0.5;
 
-                // Color adapts towards cursor hue
                 this.hue = (this.hue * 0.95 + mouse.hueShift * 0.05);
                 this.alpha = Math.min(1, this.alpha + 0.05);
             } else {
-                // Return slowly to base properties
                 this.hue = (this.hue * 0.98 + this.baseHue * 0.02);
                 this.alpha = (this.alpha * 0.98 + (0.4) * 0.02);
             }
 
-            // Shockwave influence
             for (let i = 0; i < shockwaves.length; i++) {
                 const sw = shockwaves[i];
                 const sdx = this.x - sw.x;
@@ -104,7 +85,6 @@
                 }
             }
 
-            // Speed limit & damping
             const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
             if (currentSpeed > 3) {
                 this.vx *= 0.95;
@@ -117,7 +97,6 @@
             this.x += this.vx;
             this.y += this.vy;
 
-            // Bounce off boundaries with soft restitution
             if (this.x < 0) {
                 this.x = 0;
                 this.vx *= -1;
@@ -160,7 +139,6 @@
         }
     }
 
-    // Connect close particles with glowing gradient lines
     function drawConnections() {
         for (let i = 0; i < particles.length; i++) {
             for (let j = i + 1; j < particles.length; j++) {
@@ -187,7 +165,6 @@
         }
     }
 
-    // Update and draw shockwaves
     function drawShockwaves() {
         for (let i = shockwaves.length - 1; i >= 0; i--) {
             const sw = shockwaves[i];
@@ -207,16 +184,12 @@
         }
     }
 
-    // Animation Loop
     function animate() {
-        // Smooth mouse follow
         mouse.x += (mouse.targetX - mouse.x) * 0.15;
         mouse.y += (mouse.targetY - mouse.y) * 0.15;
 
-        // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
-        // Draw ambient glow at mouse
         if (mouse.isHovered) {
             const radialGlow = ctx.createRadialGradient(
                 mouse.x, mouse.y, 0,
@@ -232,13 +205,10 @@
             ctx.fill();
         }
 
-        // Draw connections
         drawConnections();
 
-        // Draw shockwaves
         drawShockwaves();
 
-        // Update & draw particles
         for (let i = 0; i < particles.length; i++) {
             particles[i].update();
             particles[i].draw();
@@ -247,7 +217,6 @@
         requestAnimationFrame(animate);
     }
 
-    // Event listeners
     window.addEventListener('resize', resize);
 
     window.addEventListener('mousemove', (e) => {
@@ -255,7 +224,6 @@
         mouse.targetY = e.clientY;
         mouse.isHovered = true;
 
-        // Dynamic color shifting based on horizontal & vertical position
         const normalizedX = e.clientX / window.innerWidth;
         const normalizedY = e.clientY / window.innerHeight;
         mouse.hueShift = (180 + normalizedX * 120 + normalizedY * 60) % 360;
@@ -280,7 +248,6 @@
         });
     });
 
-    // Initialize
     resize();
     requestAnimationFrame(animate);
 })();

@@ -2,6 +2,7 @@ package ua.kpi.absolutesvinema.controller.api;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -27,14 +28,6 @@ import ua.kpi.absolutesvinema.service.ScreeningService;
 import java.util.Iterator;
 import java.util.Set;
 
-/**
- * Handles PATCH /api/screenings/{id} for two patch formats:
- * <ul>
- *   <li>RFC 6902 JSON Patch  — Content-Type: application/json-patch+json</li>
- *   <li>RFC 7396 JSON Merge Patch — Content-Type: application/merge-patch+json</li>
- * </ul>
- * Both require ROLE_ADMIN (enforced by SecurityConfig).
- */
 @Tag(name = "Screening Partial Updates", description = "RFC 6902 JSON Patch and RFC 7396 JSON Merge Patch operations")
 @RestController
 @RequestMapping("/api/screenings")
@@ -43,13 +36,11 @@ public class ScreeningPatchController {
     public static final String JSON_PATCH_MEDIA_TYPE  = "application/json-patch+json";
     public static final String MERGE_PATCH_MEDIA_TYPE = "application/merge-patch+json";
 
-    /** Fields that may be patched (matching ScreeningRequest record components). */
     private static final Set<String> ALLOWED_FIELDS = Set.of(
             "movieTitle", "movieDescription", "movieDurationMinutes",
             "startsAt", "hall", "ticketPrice"
     );
 
-    /** Valid JSON Pointer paths (top-level only). */
     private static final Set<String> ALLOWED_PATHS = Set.of(
             "/movieTitle", "/movieDescription", "/movieDurationMinutes",
             "/startsAt", "/hall", "/ticketPrice"
@@ -67,10 +58,9 @@ public class ScreeningPatchController {
         this.validator = validator;
     }
 
-    // ── RFC 6902 JSON Patch ─────────────────────────────────────────────────
 
     @Operation(
-            summary = "Partially update screening using RFC 6902 JSON Patch",
+            summary = "Partially update screening using JSON Patch (RFC 6902) or JSON Merge Patch (RFC 7396)",
             description = "Applies an array of standard RFC 6902 patch operations (add, remove, replace, move, copy, test) " +
                     "to an existing screening resource. Only editable fields (movieTitle, movieDescription, movieDurationMinutes, " +
                     "startsAt, hall, ticketPrice) may be targeted. Attempts to modify id, seats, tickets, or unknown fields are rejected. " +
@@ -81,7 +71,9 @@ public class ScreeningPatchController {
                     @SecurityRequirement(name = "csrfToken")
             },
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "RFC 6902 JSON Patch operations array",
+                    description = "Partial update using RFC 6902 JSON Patch " +
+                            "or RFC 7396 JSON Merge Patch. " +
+                            "Select the appropriate Content-Type.",
                     required = true,
                     content = @Content(
                             mediaType = JSON_PATCH_MEDIA_TYPE,
@@ -160,33 +152,34 @@ public class ScreeningPatchController {
     public ResponseEntity<ScreeningResponse> patchJsonPatch(
             @Parameter(description = "Numeric identifier of screening to patch", example = "1", required = true)
             @PathVariable Long id,
+            @Parameter(array = @ArraySchema(schema = @Schema(type = "object", example = """
+                    {"op": "replace", "path": "/movieTitle", "value": "Interstellar (IMAX)"}
+                    """)))
             @RequestBody String patchBody) {
 
-        Screening existing = screeningService.findById(id);           // 404 if absent
+        Screening existing = screeningService.findById(id);
         JsonNode patchNode = parseJson(patchBody);
 
         if (!patchNode.isArray()) {
             throw new IllegalArgumentException("JSON Patch payload must be a JSON array (RFC 6902)");
         }
 
-        // Validate every operation targets only allowed fields
         for (JsonNode op : patchNode) {
             validateOperationPaths(op);
         }
 
-        JsonPatch patch = JsonPatch.fromJsonNode(patchNode);          // JsonPatchException on bad ops
+        JsonPatch patch = JsonPatch.fromJsonNode(patchNode);
         JsonNode original = editableTree(existing);
-        JsonNode patched = patch.apply(original);                     // JsonPatchException on test fail etc.
+        JsonNode patched = patch.apply(original);
 
         ScreeningRequest request = deserializeAndValidate(patched);
         Screening updated = applyUpdate(id, request);
         return ResponseEntity.ok(ScreeningResponse.from(updated));
     }
 
-    // ── RFC 7396 JSON Merge Patch ───────────────────────────────────────────
 
     @Operation(
-            summary = "Partially update screening using RFC 7396 JSON Merge Patch",
+            summary = "Partially update screening using JSON Patch (RFC 6902) or JSON Merge Patch (RFC 7396)",
             description = "Applies an RFC 7396 merge patch document to an existing screening resource. " +
                     "Properties present in the patch object overwrite existing values; explicit null indicates property removal " +
                     "(which fails validation for required screening fields). Only editable fields may be provided; " +
@@ -262,16 +255,16 @@ public class ScreeningPatchController {
     public ResponseEntity<ScreeningResponse> patchMergePatch(
             @Parameter(description = "Numeric identifier of screening to merge-patch", example = "1", required = true)
             @PathVariable Long id,
+            @Parameter(schema = @Schema(type = "object"))
             @RequestBody String patchBody) {
 
-        Screening existing = screeningService.findById(id);           // 404 if absent
+        Screening existing = screeningService.findById(id);
         JsonNode patchNode = parseJson(patchBody);
 
         if (!patchNode.isObject()) {
             throw new IllegalArgumentException("Merge Patch payload must be a JSON object (RFC 7396)");
         }
 
-        // Reject forbidden / unknown top-level fields
         for (Iterator<String> it = patchNode.propertyNames().iterator(); it.hasNext(); ) {
             String field = it.next();
             if (!ALLOWED_FIELDS.contains(field)) {
@@ -288,12 +281,7 @@ public class ScreeningPatchController {
         return ResponseEntity.ok(ScreeningResponse.from(updated));
     }
 
-    // ── private helpers ─────────────────────────────────────────────────────
 
-    /**
-     * Builds a detached JSON tree containing only the editable fields of a
-     * screening, matching the shape of {@link ScreeningRequest}.
-     */
     private JsonNode editableTree(Screening screening) {
         ScreeningRequest editable = new ScreeningRequest(
                 screening.movieTitle(),
@@ -306,9 +294,6 @@ public class ScreeningPatchController {
         return objectMapper.valueToTree(editable);
     }
 
-    /**
-     * Parses raw JSON text; throws {@link IllegalArgumentException} on malformed input.
-     */
     private JsonNode parseJson(String json) {
         if (json == null || json.isBlank()) {
             throw new IllegalArgumentException("Request body must not be blank");
@@ -320,9 +305,6 @@ public class ScreeningPatchController {
         }
     }
 
-    /**
-     * Validates that a single RFC 6902 operation targets only allowed paths.
-     */
     private void validateOperationPaths(JsonNode op) {
         if (!op.isObject()) {
             throw new IllegalArgumentException("Each JSON Patch operation must be an object");
@@ -346,10 +328,6 @@ public class ScreeningPatchController {
         }
     }
 
-    /**
-     * Deserialises the patched JSON tree into a {@link ScreeningRequest} and
-     * runs Bean Validation constraints explicitly.
-     */
     private ScreeningRequest deserializeAndValidate(JsonNode patched) {
         if (!patched.isObject()) {
             throw new IllegalArgumentException("Patched result must be a JSON object");
