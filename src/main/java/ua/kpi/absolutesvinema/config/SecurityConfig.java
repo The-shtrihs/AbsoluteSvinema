@@ -32,6 +32,7 @@ public class SecurityConfig {
 
         http
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/v3/api-docs", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/csrf").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/screenings", "/api/screenings/**").permitAll()
                         .requestMatchers("/api/screenings", "/api/screenings/**").hasRole("ADMIN")
