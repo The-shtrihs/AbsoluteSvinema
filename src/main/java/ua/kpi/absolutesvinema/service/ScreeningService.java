@@ -29,6 +29,24 @@ public class ScreeningService {
         return screeningRepository.findAll();
     }
 
+    public List<Screening> findFiltered(String title, String hall) {
+        return screeningRepository.findAll().stream()
+                .filter(s -> {
+                    if (title != null && !title.isBlank()) {
+                        return s.movieTitle().toLowerCase().contains(title.trim().toLowerCase());
+                    }
+                    return true;
+                })
+                .filter(s -> {
+                    if (hall != null && !hall.isBlank()) {
+                        return s.hall().trim().equalsIgnoreCase(hall.trim());
+                    }
+                    return true;
+                })
+                .sorted(java.util.Comparator.comparing(Screening::id))
+                .toList();
+    }
+
     public Screening findById(Long id) {
         return screeningRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Screening", id));

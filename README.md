@@ -175,28 +175,31 @@ No agent or Codex may **commit or push without a person's permission**.
 
 **Completion criterion:** the main scenario works in a browser; all Thymeleaf constructs appear in real templates, and an XSS string does not execute.
 
-## 7. Lab 4 — RESTful web services (future)
+## 7. Lab 4 — RESTful web services (completed)
 
-**The same project; add REST alongside MVC.** Exact requirements are taken from `Spring-lab-04(1).docx`.
+**The same project; REST added alongside MVC.** Detailed documentation, Postman workflow, and API map are available in [docs/lab-4/README.md](file:///D:/Java/spring/lab%202%203%204/docs/lab-4/README.md).
 
-### Implement
+### Implemented
 
-- [ ] `ScreeningRestController` at `/api/screenings`:
-  - `POST /api/screenings` — create (**201**).
-  - `GET /api/screenings/{id}` — read (**200 / 404**).
-  - `GET /api/screenings` — list with **filtering** (for example, `movieTitle`) and **pagination** (`page`, `size`).
-  - `PUT /api/screenings/{id}` — fully update (**200 / 400 / 404**).
-  - `DELETE /api/screenings/{id}` — delete (**204 / 404**).
-- [ ] Two **different** `PATCH /api/screenings/{id}` formats selected by `Content-Type`:
-  - `application/json-patch+json` — **JSON Patch, RFC 6902** (an array of operations).
-  - `application/merge-patch+json` — **JSON Merge Patch, RFC 7386** (a JSON object).
-  - Use correct support for these formats; **do not present an ordinary partial PUT as an implementation of both RFCs**. Patch only permitted screening fields and validate the result.
-- [ ] Correct HTTP codes, including **400, 404, 409** where appropriate, and clear JSON errors (`@RestControllerAdvice`).
-- [ ] REST request/response DTOs, `@Valid`, and Jakarta Validation; avoid returning mutable domain objects directly if that causes problems.
-- [ ] **OpenAPI for every operation**: summary, description, parameters/data models, and all expected HTTP statuses.
-- [ ] Check the API in **Postman** against its documentation: CRUD, filters, pagination, both PATCH formats, and errors; save the collection/screenshots.
+- [x] `ScreeningRestController` at `/api/screenings`:
+  - `POST /api/screenings` — create (**201 Created** with `Location` header).
+  - `GET /api/screenings/{id}` — read details (**200 OK / 404 Not Found**).
+  - `GET /api/screenings` — list with **filtering** (`title`, `hall`) and **pagination** (`page`, `size`).
+  - `PUT /api/screenings/{id}` — full update (**200 OK / 400 / 404**).
+  - `DELETE /api/screenings/{id}` — delete with seats and tickets (**204 No Content / 404**).
+- [x] Two standard partial update handlers (`PATCH /api/screenings/{id}`):
+  - `application/json-patch+json` — **RFC 6902 JSON Patch** (array of operations: `add`, `remove`, `replace`, `move`, `copy`, `test`).
+  - `application/merge-patch+json` — **RFC 7396 JSON Merge Patch** (JSON document patch; explicit `null` fails Bean Validation on required fields).
+  - Atomic persistence: updates persist only after patch application and full Bean Validation succeed; invalid paths, unknown fields, or forbidden fields (`id`, `seats`) are rejected with 400.
+- [x] Consistent HTTP error responses via `@RestControllerAdvice` (`ApiExceptionHandler`) returning RFC 7807 `ProblemDetail` (**400, 401, 403, 404, 409, 415**).
+- [x] REST DTOs (`ScreeningRequest`, `ScreeningResponse`, `PageResponse`, `CsrfResponse`) with Jakarta Bean Validation and OpenAPI `@Schema`.
+- [x] **OpenAPI 3 / Swagger UI** integration via `springdoc-openapi-starter-webmvc-ui:3.2.0`:
+  - Swagger UI: `http://localhost:8080/swagger-ui.html`
+  - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+  - Grouped API (`/api/**`), operation summaries, descriptions, parameters, schemas, and security schemes (`cookieAuth`, `csrfToken`).
+- [x] **Postman Collection v2.1** under `docs/lab-4/postman/AbsoluteSvinema-Lab4.postman_collection.json` containing 33 structured requests covering auth, CRUD, pagination, filtering, both PATCH formats, error cases, and documentation endpoints.
 
-**Completion criterion:** REST works independently of HTML and uses **the same services**; Postman examples match OpenAPI.
+**Completion criterion:** REST works independently of HTML using the same underlying services; both PATCH formats work correctly without breaking invariants; Postman collection imports cleanly and matches OpenAPI contracts.
 
 ## 8. Lab 5 — JDBC and PostgreSQL (preliminary plan)
 
@@ -261,7 +264,7 @@ Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin
 | `GET /admin/tickets`, `/admin/tickets/{id}/edit` | ADMIN ticket pages |
 | `POST /admin/tickets/{id}/edit`, `/admin/tickets/{id}/cancel` | ADMIN ticket management |
 
-All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2 and 3 are implemented; Labs 4–6 above remain future requirements. Store each lab's report evidence in `docs/lab-N/`.
+All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2, 3, and 4 are completed; Labs 5–6 above remain future requirements. Store each lab's report evidence in `docs/lab-N/`.
 
 ### Rule for Codex / AI assistants
 

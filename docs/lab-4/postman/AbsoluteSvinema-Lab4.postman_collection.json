@@ -1,0 +1,1310 @@
+{
+  "info": {
+    "_postman_id": "a8f3b4c1-2d5e-4f6a-9b7c-1e2d3f4a5b6c",
+    "name": "AbsoluteSvinema - Lab 4 Screening REST API",
+    "description": "Complete Postman collection for Lab 4 REST API verification: CRUD operations, filtering, pagination, RFC 6902 JSON Patch, RFC 7396 JSON Merge Patch, error handling, security (session auth, CSRF, role enforcement), and OpenAPI documentation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "screeningId",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "csrfToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminEmail",
+      "value": "admin@svinema.ua",
+      "type": "string"
+    },
+    {
+      "key": "adminPassword",
+      "value": "admin123",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "user@svinema.ua",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "user123",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Authentication & CSRF Setup",
+      "item": [
+        {
+          "name": "1. GET CSRF Token (Pre-Login)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"CSRF token received\", function () {",
+                  "    pm.expect(json.token).to.be.a('string');",
+                  "    pm.collectionVariables.set(\"csrfToken\", json.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "csrf"]
+            },
+            "description": "Fetch CSRF token prior to authentication for form login submission."
+          }
+        },
+        {
+          "name": "2. POST Login (as ADMIN)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Login successful (200 or 302 redirect)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{adminEmail}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{adminPassword}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["login"]
+            },
+            "description": "Authenticate as ADMIN. Postman cookie jar automatically stores the JSESSIONID cookie."
+          }
+        },
+        {
+          "name": "3. GET CSRF Token (Post-Login / Refresh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Updated CSRF token captured\", function () {",
+                  "    pm.expect(json.token).to.be.a('string').and.not.empty;",
+                  "    pm.collectionVariables.set(\"csrfToken\", json.token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "csrf"]
+            },
+            "description": "After authentication Spring Security refreshes the CSRF token. Re-fetch it to authorize subsequent write operations."
+          }
+        }
+      ]
+    },
+    {
+      "name": "01 - Public Screenings Read API",
+      "item": [
+        {
+          "name": "4. GET Screenings List (Default Pagination)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Has content and pagination metadata\", function () {",
+                  "    pm.expect(json.content).to.be.an('array');",
+                  "    pm.expect(json.page).to.eql(0);",
+                  "    pm.expect(json.size).to.eql(10);",
+                  "    pm.expect(json.totalElements).to.be.at.least(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"]
+            }
+          }
+        },
+        {
+          "name": "5. GET Screenings - Filter by Title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Every item matches title substring\", function () {",
+                  "    json.content.forEach(function (s) {",
+                  "        pm.expect(s.movieTitle.toLowerCase()).to.include(\"interstellar\");",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings?title=Interstellar",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"],
+              "query": [
+                {
+                  "key": "title",
+                  "value": "Interstellar"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "6. GET Screenings - Filter by Hall",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Every item matches hall\", function () {",
+                  "    json.content.forEach(function (s) {",
+                  "        pm.expect(s.hall).to.eql(\"Hall 1\");",
+                  "    });",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings?hall=Hall 1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"],
+              "query": [
+                {
+                  "key": "hall",
+                  "value": "Hall 1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "7. GET Screenings - Pagination (page=0, size=2)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Page size respected\", function () {",
+                  "    pm.expect(json.content.length).to.be.at.most(2);",
+                  "    pm.expect(json.page).to.eql(0);",
+                  "    pm.expect(json.size).to.eql(2);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings?page=0&size=2",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "2"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "8. GET Screening by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Contains screening details\", function () {",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "    pm.expect(json.movieTitle).to.be.a('string');",
+                  "    pm.expect(json.startsAt).to.be.a('string');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/{{screeningId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "{{screeningId}}"]
+            }
+          }
+        },
+        {
+          "name": "9. GET Non-Existent Screening (404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Returns RFC 7807 ProblemDetail\", function () {",
+                  "    pm.expect(json.status).to.eql(404);",
+                  "    pm.expect(json.title).to.eql(\"Resource Not Found\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/999999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "999999"]
+            }
+          }
+        },
+        {
+          "name": "10. GET Screenings - Invalid Page (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Problem detail indicates bad request\", function () {",
+                  "    pm.expect(json.status).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings?page=-1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "-1"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "11. GET Screenings - Invalid Size (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Problem detail indicates bad request\", function () {",
+                  "    pm.expect(json.status).to.eql(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings?size=200",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "200"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Screening CRUD (ADMIN)",
+      "item": [
+        {
+          "name": "12. POST Create Screening (201 Created)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"Location header is returned\", function () {",
+                  "    pm.response.to.have.header(\"Location\");",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Created screening has ID\", function () {",
+                  "    pm.expect(json.id).to.be.a('number');",
+                  "    pm.expect(json.movieTitle).to.eql(\"Dune: Part Two\");",
+                  "    pm.collectionVariables.set(\"screeningId\", json.id.toString());",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"Dune: Part Two\",\n  \"movieDescription\": \"Paul Atreides unites with Chani and the Fremen to seek revenge.\",\n  \"movieDurationMinutes\": 166,\n  \"startsAt\": \"2028-11-20T20:00:00\",\n  \"hall\": \"Hall IMAX\",\n  \"ticketPrice\": 290.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"]
+            }
+          }
+        },
+        {
+          "name": "13. PUT Full Update Screening (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"All fields updated\", function () {",
+                  "    pm.expect(json.movieTitle).to.eql(\"Dune: Part Two (Updated)\");",
+                  "    pm.expect(json.movieDurationMinutes).to.eql(168);",
+                  "    pm.expect(json.ticketPrice).to.eql(310.00);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"Dune: Part Two (Updated)\",\n  \"movieDescription\": \"Updated synopsis for Dune.\",\n  \"movieDurationMinutes\": 168,\n  \"startsAt\": \"2028-11-20T20:30:00\",\n  \"hall\": \"Hall IMAX\",\n  \"ticketPrice\": 310.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/{{screeningId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "{{screeningId}}"]
+            }
+          }
+        },
+        {
+          "name": "14. DELETE Screening (204 No Content)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 204\", function () {",
+                  "    pm.response.to.have.status(204);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/{{screeningId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "{{screeningId}}"]
+            }
+          }
+        },
+        {
+          "name": "15. GET Deleted Screening (Verify 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/{{screeningId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "{{screeningId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - RFC 6902 JSON Patch",
+      "item": [
+        {
+          "name": "16. PATCH JSON Patch - Replace Title & Price (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Patched fields match\", function () {",
+                  "    pm.expect(json.movieTitle).to.eql(\"Interstellar (IMAX Remastered)\");",
+                  "    pm.expect(json.ticketPrice).to.eql(275.50);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"replace\", \"path\": \"/movieTitle\", \"value\": \"Interstellar (IMAX Remastered)\"},\n  {\"op\": \"replace\", \"path\": \"/ticketPrice\", \"value\": 275.50}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "17. PATCH JSON Patch - Test Operation Success (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Duration updated after test op\", function () {",
+                  "    pm.expect(json.movieDurationMinutes).to.eql(170);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"test\", \"path\": \"/movieTitle\", \"value\": \"Interstellar (IMAX Remastered)\"},\n  {\"op\": \"replace\", \"path\": \"/movieDurationMinutes\", \"value\": 170}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "18. PATCH JSON Patch - Test Operation Failure (409 Conflict)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Conflict title matches\", function () {",
+                  "    pm.expect(json.title).to.eql(\"Patch Test Condition Failed\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"test\", \"path\": \"/movieTitle\", \"value\": \"Wrong Unmatched Value\"}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "19. PATCH JSON Patch - Copy Operation (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Description now equals title\", function () {",
+                  "    pm.expect(json.movieDescription).to.eql(json.movieTitle);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"copy\", \"from\": \"/movieTitle\", \"path\": \"/movieDescription\"}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "20. PATCH JSON Patch - Forbidden ID Patch (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"replace\", \"path\": \"/id\", \"value\": 999}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "21. PATCH JSON Patch - Unknown Field Path (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"op\": \"replace\", \"path\": \"/nonExistentField\", \"value\": \"value\"}\n]"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - RFC 7396 JSON Merge Patch",
+      "item": [
+        {
+          "name": "22. PATCH Merge Patch - Partial Update (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Only patched fields changed\", function () {",
+                  "    pm.expect(json.movieTitle).to.eql(\"Interstellar (Merged Cut)\");",
+                  "    pm.expect(json.movieDurationMinutes).to.eql(172);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"Interstellar (Merged Cut)\",\n  \"movieDurationMinutes\": 172\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "23. PATCH Merge Patch - Null Removal Fails Validation (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Validation error on removed required field\", function () {",
+                  "    pm.expect(json.title).to.eql(\"Validation Failed\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "24. PATCH Merge Patch - Forbidden ID Property (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": 999\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "25. PATCH Merge Patch - Unknown Property (400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/merge-patch+json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"unknownField\": \"hacked\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Error Cases & Security",
+      "item": [
+        {
+          "name": "26. POST Create - Validation Error (400 Bad Request)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Contains field errors\", function () {",
+                  "    pm.expect(json.errors).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"\",\n  \"movieDescription\": \"\",\n  \"movieDurationMinutes\": -1,\n  \"startsAt\": null,\n  \"hall\": \"\",\n  \"ticketPrice\": -10.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"]
+            }
+          }
+        },
+        {
+          "name": "27. PATCH Wrong Content-Type (415 Unsupported Media Type)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 415\", function () {",
+                  "    pm.response.to.have.status(415);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"Wrong Content Type\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings", "1"]
+            }
+          }
+        },
+        {
+          "name": "28. POST Create - Missing CSRF (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"No CSRF Movie\",\n  \"movieDescription\": \"Desc\",\n  \"movieDurationMinutes\": 100,\n  \"startsAt\": \"2028-01-01T12:00:00\",\n  \"hall\": \"H1\",\n  \"ticketPrice\": 100.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"]
+            }
+          }
+        },
+        {
+          "name": "29. POST Login (as Regular USER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"User login successful (200 or 302)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "email",
+                  "value": "{{userEmail}}",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "{{userPassword}}",
+                  "type": "text"
+                },
+                {
+                  "key": "_csrf",
+                  "value": "{{csrfToken}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["login"]
+            }
+          }
+        },
+        {
+          "name": "30. GET CSRF Token (as Regular USER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set(\"csrfToken\", json.token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "csrf"]
+            }
+          }
+        },
+        {
+          "name": "31. POST Create - Forbidden for USER Role (403 Forbidden)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 403 Forbidden\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-TOKEN",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"movieTitle\": \"User Attempting Admin Action\",\n  \"movieDescription\": \"Desc\",\n  \"movieDurationMinutes\": 100,\n  \"startsAt\": \"2028-01-01T12:00:00\",\n  \"hall\": \"H1\",\n  \"ticketPrice\": 100.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/screenings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "screenings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Documentation Endpoints",
+      "item": [
+        {
+          "name": "32. GET OpenAPI JSON Spec (200 OK)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var json = pm.response.json();",
+                  "pm.test(\"Valid OpenAPI spec\", function () {",
+                  "    pm.expect(json.openapi).to.match(/^3\\./);",
+                  "    pm.expect(json.info.title).to.eql(\"AbsoluteSvinema REST API\");",
+                  "    pm.expect(json.paths[\"/api/screenings\"]).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/api-docs",
+              "host": ["{{baseUrl}}"],
+              "path": ["v3", "api-docs"]
+            }
+          }
+        },
+        {
+          "name": "33. GET Swagger UI (200 / 302)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Swagger UI accessible (200 or 302)\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 302]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/swagger-ui.html",
+              "host": ["{{baseUrl}}"],
+              "path": ["swagger-ui.html"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
