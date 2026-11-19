@@ -27,7 +27,7 @@ The implemented models are `Screening`, `Seat`, `Ticket`, and `User`. Movie info
 
 Authentication uses Spring Security sessions and BCrypt password hashing. Standard CSRF protection covers all POST forms through Thymeleaf integration. Guests can browse and book seats; only the owning user can cancel a ticket through My Tickets. Administrators can manage all screenings and tickets, including guest bookings.
 
-**Out of scope:** payments, QR codes, email/SMS, complex frontend architecture, and production deployment hardening. Storage is currently in memory and resets on restart.
+**Out of scope:** payments, QR codes, email/SMS, complex frontend architecture, and production deployment hardening. Since Lab 5 data is stored in PostgreSQL (Docker Compose) and survives restarts.
 
 ## 2. Data models
 
@@ -201,16 +201,16 @@ No agent or Codex may **commit or push without a person's permission**.
 
 **Completion criterion:** REST works independently of HTML using the same underlying services; both PATCH formats work correctly without breaking invariants; Postman collection imports cleanly and matches OpenAPI contracts.
 
-## 8. Lab 5 — JDBC and PostgreSQL (preliminary plan)
+## 8. Lab 5 — Docker, JDBC and PostgreSQL (completed)
 
-> **Note:** the exact Lab 5 assignment has not yet been incorporated into this README. This is the agreed technical plan; check mandatory requirements against the original assignment before implementation.
+Setup, schema, transaction/rollback demonstration and verification results: [docs/lab-5/README.md](docs/lab-5/README.md).
 
-- [ ] Connect PostgreSQL and create `screenings`, `seats`, `tickets` tables with PK/FK and `UNIQUE(tickets.seat_id)`.
-- [ ] Replace Fake Repositories with JDBC implementations **without changing controllers or the service business API**.
-- [ ] Demonstrate **`JdbcTemplate` and `JdbcClient`** in real CRUD/search operations if required by the assignment.
-- [ ] Database-generated IDs and correct reading of lists and relationships.
-- [ ] `@Transactional` for creating/deleting a screening together with its seats, or another compound operation; verify **rollback** on error.
-- [ ] Storage tests using a real test database / reproducible SQL demonstrations.
+- [x] `Dockerfile` + `compose.yaml` (app + `postgres:17-alpine` with a named volume and healthcheck); secrets in a local `.env` (template: `.env.example`).
+- [x] `schema.sql`: `screenings`, `seats`, `users`, `tickets` with identity PKs, FKs, `UNIQUE(tickets.seat_id)`, `UNIQUE(users.email)`.
+- [x] JDBC repositories **without changing controllers or the service business API**: `JdbcTemplate` (screenings, seats) and `JdbcClient` (tickets, users), each with CRUD and criteria search.
+- [x] `@Transactional` `ScreeningService.create` / `delete`; rollback verified after a partial SQL write.
+- [x] `PasswordEncoder` uses `PASSWORD_SALT` from `.env` as a pepper on top of BCrypt.
+- [x] Tests on in-memory H2 (PostgreSQL mode); manual checks on PostgreSQL in Docker.
 
 **Completion criterion:** data survives application restarts, and Lab 2–4 scenarios continue to work.
 
@@ -240,13 +240,15 @@ No agent or Codex may **commit or push without a person's permission**.
 
 ## 11. Getting started
 
-Requires JDK 21+ and Maven. From the repository root:
+Requires Docker (Compose v2); JDK 21+ only for running tests or the app outside Docker. From the repository root:
 
 ```sh
-mvn compile
-mvn test
-mvn spring-boot:run
+cp .env.example .env            # then set your own DB_PASSWORD and PASSWORD_SALT
+docker compose up --build -d    # PostgreSQL + application
+./mvnw test                     # tests use in-memory H2, no Docker needed
 ```
+
+To run Spring Boot from the IDE/Maven instead: `docker compose up -d db` and `./mvnw spring-boot:run`. Details and the `docker compose down -v` data-loss warning: [docs/lab-5/README.md](docs/lab-5/README.md).
 
 Open `http://localhost:8080`. Demo movies are **Interstellar**, **Pulp Fiction**, and **The Lord of the Rings: The Return of the King**. Each screening has 15 seats.
 
@@ -264,7 +266,7 @@ Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin
 | `GET /admin/tickets`, `/admin/tickets/{id}/edit` | ADMIN ticket pages |
 | `POST /admin/tickets/{id}/edit`, `/admin/tickets/{id}/cancel` | ADMIN ticket management |
 
-All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2, 3, and 4 are completed; Labs 5–6 above remain future requirements. Store each lab's report evidence in `docs/lab-N/`.
+All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2–5 are completed; Lab 6 above remains a future requirement. Store each lab's report evidence in `docs/lab-N/`.
 
 ### Rule for Codex / AI assistants
 
