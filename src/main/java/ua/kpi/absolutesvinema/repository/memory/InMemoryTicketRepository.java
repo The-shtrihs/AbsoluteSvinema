@@ -1,5 +1,6 @@
 package ua.kpi.absolutesvinema.repository.memory;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import ua.kpi.absolutesvinema.model.Ticket;
 import ua.kpi.absolutesvinema.repository.TicketRepository;
@@ -12,6 +13,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
+@Profile("memory")
 public class InMemoryTicketRepository implements TicketRepository {
     private final Map<Long, Ticket> tickets = new LinkedHashMap<>();
     private long nextId = 1;

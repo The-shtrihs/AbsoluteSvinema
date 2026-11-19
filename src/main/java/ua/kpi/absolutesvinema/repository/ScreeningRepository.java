@@ -13,5 +13,11 @@ public interface ScreeningRepository {
 
     List<Screening> findAll();
 
+    /**
+     * Case-insensitive title substring and hall equality; a null/blank criterion is ignored.
+     * Results are ordered by ID.
+     */
+    List<Screening> findByTitleAndHall(String title, String hall);
+
     void deleteById(Long id);
 }
