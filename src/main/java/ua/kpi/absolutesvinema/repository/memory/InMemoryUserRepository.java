@@ -1,5 +1,6 @@
 package ua.kpi.absolutesvinema.repository.memory;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import ua.kpi.absolutesvinema.model.User;
 import ua.kpi.absolutesvinema.repository.UserRepository;
@@ -11,6 +12,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
+@Profile("memory")
 public class InMemoryUserRepository implements UserRepository {
     private final Map<Long, User> users = new LinkedHashMap<>();
     private long nextId = 1;
