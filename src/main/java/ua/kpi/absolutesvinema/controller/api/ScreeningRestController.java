@@ -19,7 +19,7 @@ import ua.kpi.absolutesvinema.dto.api.PageResponse;
 import ua.kpi.absolutesvinema.dto.api.ScreeningRequest;
 import ua.kpi.absolutesvinema.dto.api.ScreeningResponse;
 import ua.kpi.absolutesvinema.model.Screening;
-import ua.kpi.absolutesvinema.service.ScreeningService;
+import ua.kpi.absolutesvinema.service.ScreeningManagement;
 
 import java.net.URI;
 import java.util.List;
@@ -29,9 +29,9 @@ import java.util.List;
 @RequestMapping("/api/screenings")
 public class ScreeningRestController {
 
-    private final ScreeningService screeningService;
+    private final ScreeningManagement screeningService;
 
-    public ScreeningRestController(ScreeningService screeningService) {
+    public ScreeningRestController(ScreeningManagement screeningService) {
         this.screeningService = screeningService;
     }
 

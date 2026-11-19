@@ -1,6 +1,7 @@
 package ua.kpi.absolutesvinema.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ua.kpi.absolutesvinema.exception.ResourceNotFoundException;
 import ua.kpi.absolutesvinema.model.Screening;
 import ua.kpi.absolutesvinema.model.Seat;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class ScreeningService {
+public class ScreeningService implements ScreeningManagement {
     private final ScreeningRepository screeningRepository;
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
@@ -29,15 +30,23 @@ public class ScreeningService {
         return screeningRepository.findAll();
     }
 
+    @Override
     public List<Screening> findFiltered(String title, String hall) {
         return screeningRepository.findByTitleAndHall(title, hall);
     }
 
+    @Override
     public Screening findById(Long id) {
         return screeningRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Screening", id));
     }
 
+    /**
+     * One transaction: 1 screening INSERT + 15 seat INSERTs. Any RuntimeException
+     * (e.g. a constraint violation on a later seat) rolls back everything, including the screening.
+     */
+    @Override
+    @Transactional
     public Screening create(String movieTitle, String movieDescription, int movieDurationMinutes,
                             LocalDateTime startsAt, String hall, BigDecimal ticketPrice) {
         Screening screening = screeningRepository.save(new Screening(null, movieTitle, movieDescription,
@@ -50,6 +59,7 @@ public class ScreeningService {
         return screening;
     }
 
+    @Override
     public Screening update(Long id, String movieTitle, String movieDescription, int movieDurationMinutes,
                             LocalDateTime startsAt, String hall, BigDecimal ticketPrice) {
         Screening existing = findById(id);
@@ -62,6 +72,12 @@ public class ScreeningService {
         return seatRepository.findByScreeningId(screeningId);
     }
 
+    /**
+     * One transaction, explicit order to satisfy the foreign keys: tickets -> seats -> screening.
+     * A failure at any step leaves all rows in place.
+     */
+    @Override
+    @Transactional
     public void delete(Long id) {
         List<Seat> seats = findSeats(id);
         List<Long> seatIds = seats.stream().map(Seat::id).toList();
