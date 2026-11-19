@@ -14,10 +14,6 @@ import java.time.LocalDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-/**
- * Proves the transaction boundary of ScreeningService.create with a REAL database failure
- * that happens after earlier INSERTs of the same call have already succeeded.
- */
 @SpringBootTest
 class ScreeningTransactionTest {
 
@@ -56,8 +52,6 @@ class ScreeningTransactionTest {
         int screeningsBefore = count("SELECT COUNT(*) FROM screenings");
         int seatsBefore = count("SELECT COUNT(*) FROM seats");
 
-        // Temporary test-only constraint: seat 3 cannot be inserted. NOCHECK skips existing rows
-        // (PostgreSQL equivalent: NOT VALID). Screening + seats 1..2 are inserted, then seat 3 fails.
         jdbcTemplate.execute("ALTER TABLE seats ADD CONSTRAINT tmp_no_seat_3 CHECK (seat_number <> 3) NOCHECK");
         try {
             assertThatThrownBy(() -> screenings.create("Tx Rollback", "Description", 100, STARTS_AT,

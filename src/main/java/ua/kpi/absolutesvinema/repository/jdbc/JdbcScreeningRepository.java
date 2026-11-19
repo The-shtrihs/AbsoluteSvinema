@@ -18,10 +18,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * ScreeningRepository on PostgreSQL via JdbcTemplate: RowMapper for reads,
- * GeneratedKeyHolder for the database-generated ID, only bound parameters in SQL.
- */
 @Repository
 @Profile("!memory")
 public class JdbcScreeningRepository implements ScreeningRepository {
@@ -48,7 +44,6 @@ public class JdbcScreeningRepository implements ScreeningRepository {
     public Screening save(Screening screening) {
         Objects.requireNonNull(screening, "Screening is required");
         Long id = screening.id() == null ? insert(screening) : update(screening);
-        // Re-read so the result has exactly what PostgreSQL stored (NUMERIC scale, TIMESTAMP precision).
         return findById(id).orElseThrow();
     }
 
@@ -101,7 +96,6 @@ public class JdbcScreeningRepository implements ScreeningRepository {
 
     @Override
     public List<Screening> findByTitleAndHall(String title, String hall) {
-        // Only fixed SQL fragments are appended; user input always goes through '?' parameters.
         StringBuilder sql = new StringBuilder("SELECT " + COLUMNS + " FROM screenings WHERE 1 = 1");
         List<Object> params = new ArrayList<>();
         if (title != null && !title.isBlank()) {

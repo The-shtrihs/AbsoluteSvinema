@@ -1,5 +1,3 @@
--- Idempotent schema for AbsoluteSvinema (Lab 5, PostgreSQL).
--- No ON DELETE CASCADE: ScreeningService deletes tickets -> seats -> screening explicitly.
 
 CREATE TABLE IF NOT EXISTS screenings (
     id                     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

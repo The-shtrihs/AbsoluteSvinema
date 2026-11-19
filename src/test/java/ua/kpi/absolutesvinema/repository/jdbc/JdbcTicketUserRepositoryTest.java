@@ -76,7 +76,6 @@ class JdbcTicketUserRepositoryTest {
         Long seatId = newSeatIds().getFirst();
         tickets.save(new Ticket(null, seatId, null, "First", TIME));
 
-        // Bypasses the service pre-check, as a concurrent request would: the DB constraint must stop it.
         assertThatThrownBy(() -> tickets.save(new Ticket(null, seatId, null, "Second", TIME)))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Seat already has a ticket");

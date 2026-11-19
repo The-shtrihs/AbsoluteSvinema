@@ -14,10 +14,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * UserRepository on PostgreSQL via JdbcClient. Emails are stored normalized (trim + lower case,
- * as UserService does) and UNIQUE(email) guarantees one account per address.
- */
 @Repository
 @Profile("!memory")
 public class JdbcUserRepository implements UserRepository {
@@ -113,7 +109,6 @@ public class JdbcUserRepository implements UserRepository {
                 .update();
     }
 
-    /** Same normalization as UserService.createWithRole. */
     private static String normalize(String email) {
         return email.trim().toLowerCase();
     }

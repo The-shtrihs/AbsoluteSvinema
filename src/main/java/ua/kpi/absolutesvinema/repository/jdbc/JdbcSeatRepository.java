@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * SeatRepository on PostgreSQL via JdbcTemplate.
- */
 @Repository
 @Profile("!memory")
 public class JdbcSeatRepository implements SeatRepository {

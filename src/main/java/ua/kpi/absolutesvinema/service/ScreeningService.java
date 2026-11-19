@@ -41,10 +41,6 @@ public class ScreeningService implements ScreeningManagement {
                 .orElseThrow(() -> new ResourceNotFoundException("Screening", id));
     }
 
-    /**
-     * One transaction: 1 screening INSERT + 15 seat INSERTs. Any RuntimeException
-     * (e.g. a constraint violation on a later seat) rolls back everything, including the screening.
-     */
     @Override
     @Transactional
     public Screening create(String movieTitle, String movieDescription, int movieDurationMinutes,
@@ -72,10 +68,6 @@ public class ScreeningService implements ScreeningManagement {
         return seatRepository.findByScreeningId(screeningId);
     }
 
-    /**
-     * One transaction, explicit order to satisfy the foreign keys: tickets -> seats -> screening.
-     * A failure at any step leaves all rows in place.
-     */
     @Override
     @Transactional
     public void delete(Long id) {

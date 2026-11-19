@@ -17,10 +17,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * TicketRepository on PostgreSQL via the fluent JdbcClient API with named parameters.
- * UNIQUE(seat_id) in the schema is the real guard against double booking.
- */
 @Repository
 @Profile("!memory")
 public class JdbcTicketRepository implements TicketRepository {
@@ -44,7 +40,6 @@ public class JdbcTicketRepository implements TicketRepository {
     public Ticket save(Ticket ticket) {
         Objects.requireNonNull(ticket, "Ticket is required");
         Long id = ticket.id() == null ? insert(ticket) : update(ticket);
-        // Re-read so bookedAt has the precision PostgreSQL actually stored.
         return findById(id).orElseThrow();
     }
 
@@ -61,7 +56,6 @@ public class JdbcTicketRepository implements TicketRepository {
                     .param("bookedAt", ticket.bookedAt())
                     .update(keyHolder, "id");
         } catch (DuplicateKeyException occupied) {
-            // A concurrent booking won the race for this seat: same conflict as TicketService's pre-check.
             throw new IllegalStateException("Seat already has a ticket: " + ticket.seatId(), occupied);
         }
         return Objects.requireNonNull(keyHolder.getKey(), "No generated key returned").longValue();
@@ -120,7 +114,7 @@ public class JdbcTicketRepository implements TicketRepository {
     public List<Ticket> findBySeatIdIn(Collection<Long> seatIds) {
         Objects.requireNonNull(seatIds, "Seat IDs are required");
         if (seatIds.isEmpty()) {
-            return List.of(); // "IN ()" is not valid SQL
+            return List.of();
         }
         return jdbcClient.sql("SELECT " + COLUMNS + " FROM tickets WHERE seat_id IN (:seatIds) ORDER BY id")
                 .param("seatIds", seatIds)

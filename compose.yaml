@@ -19,7 +19,6 @@ services:
     build: .
     env_file: .env
     environment:
-      # Inside the Docker network PostgreSQL is reachable by its service name.
       DB_HOST: db
       DB_PORT: 5432
     depends_on:
