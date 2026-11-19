@@ -1,0 +1,21 @@
+# Only pom.xml and src/ are needed to build the image.
+.git
+.gitignore
+.idea
+*.iml
+.vscode
+target
+out
+docs
+HELP.md
+README.md
+
+# Secrets must never enter the build context.
+.env
+.env.*
+!.env.example
+
+Dockerfile
+compose.yaml
+.dockerignore
+.DS_Store
