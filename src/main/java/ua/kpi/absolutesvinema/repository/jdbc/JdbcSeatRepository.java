@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
-@Profile("!memory")
+@Profile("!memory & !jpa")
 public class JdbcSeatRepository implements SeatRepository {
 
     private static final String COLUMNS = "id, screening_id, row_number, seat_number";

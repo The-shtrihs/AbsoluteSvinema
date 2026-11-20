@@ -250,6 +250,8 @@ docker compose up --build -d    # PostgreSQL + application
 
 To run Spring Boot from the IDE/Maven instead: `docker compose up -d db` and `./mvnw spring-boot:run`. Details and the `docker compose down -v` data-loss warning: [docs/lab-5/README.md](docs/lab-5/README.md).
 
+For Spring Data JPA mode, start the Compose app with `docker compose run --build --rm -e SPRING_PROFILES_ACTIVE=jpa app` (or set `SPRING_PROFILES_ACTIVE=jpa` in your local `.env`). For a locally run process, use `SPRING_PROFILES_ACTIVE=jpa ./mvnw spring-boot:run`. Keep database credentials and `PASSWORD_SALT` in your untracked `.env` or environment; neither is part of the profile configuration. JPA validates the existing schema and does not initialize SQL scripts.
+
 Open `http://localhost:8080`. Demo movies are **Interstellar**, **Pulp Fiction**, and **The Lord of the Rings: The Return of the King**. Each screening has 15 seats.
 
 Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin123` (ADMIN). These are educational credentials.

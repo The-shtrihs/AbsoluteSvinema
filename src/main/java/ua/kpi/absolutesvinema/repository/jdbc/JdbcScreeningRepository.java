@@ -19,7 +19,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
-@Profile("!memory")
+@Profile("!memory & !jpa")
 public class JdbcScreeningRepository implements ScreeningRepository {
 
     private static final String COLUMNS =
