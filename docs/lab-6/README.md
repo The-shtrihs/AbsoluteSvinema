@@ -70,6 +70,12 @@ SPRING_PROFILES_ACTIVE=jpa ./mvnw spring-boot:run
 - `ScreeningCreateRollbackIntegrationTest.createRollsBackScreeningAndEarlierSeatsWhenSeatInsertFails` підміняє `SeatRepository` лише в тестовій конфігурації. Після семи успішних вставок тестовий адаптер кидає помилку на місці 2:3; SQL-перевірки після завершення виклику підтверджують нуль сеансів і нуль місць із ID невдалої операції.
 - Інтеграційні тести також виконують JPQL/NamedQuery/derived запити, перевіряють гостьовий квиток, унікальність місця, видалення пов’язаних рядків і взаємовиключність профілів. Тестова БД — наявна H2 у режимі PostgreSQL; це не є запуском проти Docker PostgreSQL.
 
+Останній JPA прогін тестів, результат якого надано для звіту: **5 tests, 0 failures, 0 errors, 0 skipped**; `JpaRepositoryIntegrationTest` виконав 4 тести. Тест rollback підтверджує реальний rollback у тестовій БД.
+
+### Результат ручної перевірки у Docker PostgreSQL
+
+Профіль `jpa` успішно стартував із PostgreSQL 17; Hibernate створив `EntityManagerFactory` після `ddl-auto=validate`, застосунок повідомив `Started AbsoluteSvinemaApplication`. Після підготовки наявної схеми користувач підтвердив успішні HTTP перевірки через `curl`: список і фільтри, адміністраторський CRUD, створення сеансу з 15 місцями, JSON Patch і Merge Patch, гостьове бронювання, повторне бронювання та видалення пов’язаних даних. Початкову помилку пошуку `btrim(bytea)` виправлено: JPA адаптер передає порожні рядки для відсутніх фільтрів; `./mvnw -q -DskipTests compile` завершився успішно. Для REST запитів використовуйте `/api/screenings`; `/screenings` — HTML маршрут.
+
 ## Swagger і Postman: сценарії
 
 Після запуску відкрийте Swagger UI: <http://localhost:8080/swagger-ui.html>. OpenAPI JSON: <http://localhost:8080/v3/api-docs>. Це наявні маршрути, не додаткові контролери.
@@ -155,6 +161,29 @@ HAVING COUNT(*) > 1;
 ```
 
 Після успішного створення очікується `seat_count = 15`; гостьовий квиток має `user_id IS NULL`. Запит пошуку дублікатів має повернути нуль рядків. Після видалення перевірте, що `SELECT COUNT(*) FROM screenings WHERE id = :screening_id;` та `SELECT COUNT(*) FROM seats WHERE screening_id = :screening_id;` повертають `0`. Користувачів перевіряйте без читання паролів: `SELECT id, email, full_name, role FROM users ORDER BY id;`.
+
+## Чеклист готовності ЛР №6
+
+- [x] `@Entity` є для Screening, Seat, Ticket, User; SQL-схема залишена з ЛР №5.
+- [x] Зв’язок `ScreeningEntity @OneToMany SeatEntity` і `SeatEntity @ManyToOne ScreeningEntity` працює в інтеграційному тесті.
+- [x] ID згенеровано PostgreSQL і отримано у відповіді створення сеансу; створення та 15 місць перевірено через Docker PostgreSQL.
+- [x] Є чотири Spring Data `CrudRepository` інтерфейси з CRUD-контрактами та адаптерами.
+- [x] JPQL `@Query` реально виконується на даних H2, зокрема з буквальними `%` та `_`.
+- [x] JPQL `@NamedQuery` реально виконується на даних H2.
+- [x] Derived query methods реально виконуються на даних H2.
+- [x] Наявні доменні інтерфейси репозиторіїв збережено; профіль `jpa` активує JPA-адаптери.
+- [x] Default/JDBC і `memory` режими перевірені на відсутність конфліктних repository beans.
+- [x] `ScreeningService.create()` закомічує один screening і рівно 15 seats у базі H2.
+- [x] Ін’єкція помилки після семи вставок місць перевірена окремим тестом: rollback прибирає screening і всі часткові seats.
+- [x] Видалення перевірене на пов’язаних квитках, місцях і сеансі.
+- [x] Перевірені гостьовий квиток із `user_id IS NULL` і квиток зареєстрованого користувача.
+- [x] Гостьове бронювання та повторне бронювання перевірено HTTP запитами у JPA профілі; повтор не створює другого квитка і не повертає 500.
+- [x] REST CRUD, фільтри, пагінацію та обидва PATCH формати перевірено через `curl` у JPA профілі; перевірки виконувалися на Docker PostgreSQL.
+- [x] OpenAPI анотації описують параметри, request/response body, операції та HTTP-коди; OpenAPI інтеграційний тест проходив.
+- [x] Ручну HTTP відповідність перевірено через `curl`; rollback окремо підтверджено інтеграційним тестом. Postman не використовувався.
+- [x] `.env`/`PASSWORD_SALT` не додавалися до документації чи Git; файли лабораторних №2–5 не змінювалися.
+
+Swagger/Postman вручну не використовувалися; HTTP сценарії прогнані через `curl`. H2 інтеграційні тести підтверджують транзакційний rollback та query механізми, а окремий Docker прогін підтверджує JPA startup і REST сценарії на PostgreSQL.
 
 ## Матеріали для звіту
 
