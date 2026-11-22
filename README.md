@@ -214,18 +214,9 @@ Setup, schema, transaction/rollback demonstration and verification results: [doc
 
 **Completion criterion:** data survives application restarts, and Lab 2–4 scenarios continue to work.
 
-## 9. Lab 6 — Spring Data JPA (preliminary plan)
+## 9. Lab 6 — Spring Data JPA (completed)
 
-> **Note:** the exact Lab 6 assignment still needs to be checked. Do not treat this list as the instructor's verbatim requirements.
-
-- [ ] Migrate to Spring Data JPA / Hibernate without rewriting MVC or REST.
-- [ ] `@Entity`, `@Id`, `@GeneratedValue`, Spring Data `CrudRepository` (or `JpaRepository` if allowed).
-- [ ] Demonstrate **1:N** for `Screening → Seat`; handle tickets correctly.
-- [ ] Three query styles if required: **derived query methods**, JPQL **`@Query`**, **`@NamedQuery`** (for example, searches by movie/time and tickets for a screening).
-- [ ] Check transactions, creation, reads, updates, deletion, and double-booking prevention.
-- [ ] Verify that HTML and REST from Labs 2–4 still work after replacing storage.
-
-**Completion criterion:** the same functionality works on JPA; queries and entity relationships are demonstrated in code and tests.
+The existing MVC/REST contracts now have an opt-in JPA/Hibernate repository implementation with entity relationships, `CrudRepository`, derived/JPQL/named queries, and transaction tests. Setup, schema mapping, API scenarios, SQL inspection, and verification evidence: [docs/lab-6/README.md](docs/lab-6/README.md).
 
 ### Opt-in JPA profile (setup commit)
 
@@ -270,7 +261,7 @@ Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin
 | `GET /admin/tickets`, `/admin/tickets/{id}/edit` | ADMIN ticket pages |
 | `POST /admin/tickets/{id}/edit`, `/admin/tickets/{id}/cancel` | ADMIN ticket management |
 
-All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2–5 are completed; Lab 6 above remains a future requirement. Store each lab's report evidence in `docs/lab-N/`.
+All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2–6 are documented in `docs/lab-N/`; store each lab's report evidence in its matching directory.
 
 ### Rule for Codex / AI assistants
 
