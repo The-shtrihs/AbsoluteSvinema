@@ -21,4 +21,4 @@ target/
 Thumbs.db
 Desktop.ini
 
-test/
+/test/

@@ -12,9 +12,7 @@ public interface ScreeningJpaDataRepository extends CrudRepository<ScreeningEnti
             select s from ScreeningEntity s
             where (
                 :title is null or trim(:title) = '' or
-                lower(s.movieTitle) like concat('%',
-                    replace(replace(replace(lower(trim(:title)), '!', '!!'), '%', '!%'), '_', '!_'),
-                    '%') escape '!'
+                locate(lower(trim(:title)), lower(s.movieTitle)) > 0
             )
               and (:hall is null or trim(:hall) = ''
                    or lower(trim(s.hall)) = lower(trim(:hall)))
