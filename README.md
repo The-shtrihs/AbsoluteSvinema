@@ -227,6 +227,10 @@ Setup, schema, transaction/rollback demonstration and verification results: [doc
 
 **Completion criterion:** the same functionality works on JPA; queries and entity relationships are demonstrated in code and tests.
 
+### Opt-in JPA profile (setup commit)
+
+The existing default remains JDBC. To start the Compose app in JPA mode, add `SPRING_PROFILES_ACTIVE=jpa` to your local, git-ignored `.env` and run `docker compose up --build -d`. For a locally run Spring Boot process, use `SPRING_PROFILES_ACTIVE=jpa ./mvnw spring-boot:run` after starting the database with `docker compose up -d db`. Keep your existing database credentials and `PASSWORD_SALT` in `.env`; do not put secrets in commands or source control. The JPA profile validates the existing schema and does not run `schema.sql`.
+
 ## 10. Scenarios that must always work
 
 1. Create a screening → obtain its ID → see 15 seats.

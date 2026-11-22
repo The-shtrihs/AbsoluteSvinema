@@ -15,7 +15,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
-@Profile("!memory")
+@Profile("!memory & !jpa")
 public class JdbcUserRepository implements UserRepository {
 
     private static final String COLUMNS = "id, email, password, full_name, role";

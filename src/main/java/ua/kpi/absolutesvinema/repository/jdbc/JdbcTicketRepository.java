@@ -18,7 +18,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Repository
-@Profile("!memory")
+@Profile("!memory & !jpa")
 public class JdbcTicketRepository implements TicketRepository {
 
     private static final String COLUMNS = "id, seat_id, user_id, customer_name, booked_at";
