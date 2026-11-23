@@ -214,18 +214,34 @@ Setup, schema, transaction/rollback demonstration and verification results: [doc
 
 **Completion criterion:** data survives application restarts, and Lab 2–4 scenarios continue to work.
 
-## 9. Lab 6 — Spring Data JPA (preliminary plan)
+## 9. Lab 6 — Spring Data JPA (completed)
 
-> **Note:** the exact Lab 6 assignment still needs to be checked. Do not treat this list as the instructor's verbatim requirements.
+The existing MVC/REST contracts now have an opt-in JPA/Hibernate repository implementation with entity relationships, `CrudRepository`, derived/JPQL/named queries, and transaction tests. Setup, schema mapping, API scenarios, SQL inspection, and verification evidence: [docs/lab-6/README.md](docs/lab-6/README.md).
 
-- [ ] Migrate to Spring Data JPA / Hibernate without rewriting MVC or REST.
-- [ ] `@Entity`, `@Id`, `@GeneratedValue`, Spring Data `CrudRepository` (or `JpaRepository` if allowed).
-- [ ] Demonstrate **1:N** for `Screening → Seat`; handle tickets correctly.
-- [ ] Three query styles if required: **derived query methods**, JPQL **`@Query`**, **`@NamedQuery`** (for example, searches by movie/time and tickets for a screening).
-- [ ] Check transactions, creation, reads, updates, deletion, and double-booking prevention.
-- [ ] Verify that HTML and REST from Labs 2–4 still work after replacing storage.
+- [x] `@Entity` mappings exist for Screening, Seat, Ticket, and User; the Lab 5 SQL schema is unchanged.
+- [x] The `ScreeningEntity @OneToMany SeatEntity` and `SeatEntity @ManyToOne ScreeningEntity` relationship works in an integration test.
+- [x] PostgreSQL generated the screening ID, returned by the create request; screening creation and its 15 seats were verified against Docker PostgreSQL.
+- [x] Four Spring Data `CrudRepository` interfaces and CRUD adapters are present.
+- [x] JPQL `@Query` executes against H2 data, including literal `%` and `_` searches.
+- [x] JPQL `@NamedQuery` executes against H2 data.
+- [x] Derived query methods execute against H2 data.
+- [x] Existing domain repository interfaces are preserved; the `jpa` profile activates the JPA adapters.
+- [x] Default/JDBC and `memory` modes were checked for competing repository beans.
+- [x] `ScreeningService.create()` commits one screening and exactly 15 seats to the H2 database.
+- [x] A test injects a failure after seven seat inserts; rollback removes the screening and all partial seat rows.
+- [x] Deletion was verified for linked tickets, seats, and screenings.
+- [x] Guest tickets with `user_id IS NULL` and tickets linked to registered users were verified.
+- [x] Guest booking and duplicate booking were checked over HTTP in JPA mode; a duplicate does not create a second ticket or return 500.
+- [x] REST CRUD, filtering, pagination, and both PATCH formats were checked with `curl` in JPA mode against Docker PostgreSQL.
+- [x] OpenAPI annotations describe parameters, request/response bodies, operations, and HTTP status codes; the OpenAPI integration test passed.
+- [x] Manual HTTP verification was recorded through `curl`; rollback was verified separately by an integration test. Postman was not used.
+- [x] `.env` and `PASSWORD_SALT` were not added to documentation or Git; Lab 2–5 files were not changed.
 
-**Completion criterion:** the same functionality works on JPA; queries and entity relationships are demonstrated in code and tests.
+JPA startup, schema validation, and the reported `curl` scenarios were completed against Docker PostgreSQL. The rollback test ran separately against the configured test database. Detailed scenarios and SQL: [docs/lab-6/README.md](docs/lab-6/README.md).
+
+### Opt-in JPA profile (setup commit)
+
+The existing default remains JDBC. To start the Compose app in JPA mode, add `SPRING_PROFILES_ACTIVE=jpa` to your local, git-ignored `.env` and run `docker compose up --build -d`. For a locally run Spring Boot process, use `SPRING_PROFILES_ACTIVE=jpa ./mvnw spring-boot:run` after starting the database with `docker compose up -d db`. Keep your existing database credentials and `PASSWORD_SALT` in `.env`; do not put secrets in commands or source control. The JPA profile validates the existing schema and does not run `schema.sql`.
 
 ## 10. Scenarios that must always work
 
@@ -266,7 +282,7 @@ Demo accounts: `user@svinema.ua` / `user123` (USER), `admin@svinema.ua` / `admin
 | `GET /admin/tickets`, `/admin/tickets/{id}/edit` | ADMIN ticket pages |
 | `POST /admin/tickets/{id}/edit`, `/admin/tickets/{id}/cancel` | ADMIN ticket management |
 
-All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2–5 are completed; Lab 6 above remains a future requirement. Store each lab's report evidence in `docs/lab-N/`.
+All POST requests require a valid CSRF token and matching session cookie. Static CSS and JavaScript remain public. Labs 2–6 are documented in `docs/lab-N/`; store each lab's report evidence in its matching directory.
 
 ### Rule for Codex / AI assistants
 
