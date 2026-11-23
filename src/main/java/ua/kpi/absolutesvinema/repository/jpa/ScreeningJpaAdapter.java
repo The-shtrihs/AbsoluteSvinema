@@ -59,8 +59,6 @@ public class ScreeningJpaAdapter implements ScreeningRepository {
     @Override
     @Transactional(readOnly = true)
     public List<Screening> findByTitleAndHall(String title, String hall) {
-        // Always bind non-null strings: PostgreSQL cannot infer the SQL type of a
-        // null JPQL parameter when it is passed to trim(), leading to btrim(bytea).
         String titleFilter = title == null || title.isBlank() ? "" : title.trim();
         String hallFilter = hall == null || hall.isBlank() ? "" : hall.trim();
         return repository.findByTitleAndHall(titleFilter, hallFilter).stream()
